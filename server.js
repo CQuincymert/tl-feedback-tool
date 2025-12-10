@@ -142,6 +142,36 @@ function adminAuth(req, res, next) {
 
 // ---------- PUBLIC API (users filling questionnaire) ----------
 
+// GET /api/current-campaign
+// Returns the most recently created campaign as the "current" one
+app.get("/api/current-campaign", async (req, res) => {
+  try {
+    const result = await pool.query(
+      `
+      SELECT id, label
+      FROM campaigns
+      ORDER BY created_at DESC
+      LIMIT 1
+      `
+    );
+
+    if (!result.rowCount) {
+      // No campaign yet – questionnaire can show a nice message
+      return res.status(404).json({ error: "No active campaign configured." });
+    }
+
+    const row = result.rows[0];
+    res.json({
+      campaignId: row.id,
+      label: row.label,
+    });
+  } catch (err) {
+    console.error("Error in /api/current-campaign:", err);
+    res.status(500).json({ error: "DB error fetching current campaign." });
+  }
+});
+
+
 // POST /api/start-session { code }
 app.post("/api/start-session", async (req, res) => {
   const { code } = req.body;
