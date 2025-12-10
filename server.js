@@ -1,12 +1,33 @@
-const express = require("express");
-const cors = require("cors");
-const sqlite3 = require("sqlite3").verbose();
-const path = require("path");
+// server.js - Neon/Postgres version
+
 require("dotenv").config();
 
-const { OPENAI_API_KEY, ADMIN_PASSWORD } = process.env;
+const express = require("express");
+const cors = require("cors");
+const path = require("path");
+const { Pool } = require("pg");
 
-// Optional OpenAI client (only used if key present)
+// Env vars
+const {
+  PORT: ENV_PORT,
+  ADMIN_PASSWORD,
+  OPENAI_API_KEY,
+  DATABASE_URL,
+} = process.env;
+
+const PORT = ENV_PORT || 4000;
+const MIN_COMMENTS_FOR_DISPLAY = 3;
+
+if (!DATABASE_URL) {
+  console.warn("WARNING: DATABASE_URL is not set. Neon/Postgres will not work.");
+}
+
+const pool = new Pool({
+  connectionString: DATABASE_URL,
+  ssl: { rejectUnauthorized: false }, // required for Neon
+});
+
+// Optional OpenAI client
 let openai = null;
 if (OPENAI_API_KEY) {
   const OpenAI = require("openai");
@@ -14,585 +35,596 @@ if (OPENAI_API_KEY) {
 }
 
 const app = express();
-const PORT = process.env.PORT || 4000;
-const DB_PATH = path.join(__dirname, "feedback.db");
-
-// Minimum number of responses before showing comments
-const MIN_COMMENTS_FOR_DISPLAY = 3;
-
 app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, "public"))); // serves index.html, admin.html etc.
+app.use(express.static(path.join(__dirname, "public"))); // serves index.html, admin.html, etc.
 
-// ---------- DB SETUP ----------
-const db = new sqlite3.Database(DB_PATH);
+// ---------- DB INIT (Postgres / Neon) ----------
 
-db.serialize(() => {
-  // Codes table: which code belongs to which TL + campaign
-  db.run(`CREATE TABLE IF NOT EXISTS codes (
-    id           INTEGER PRIMARY KEY AUTOINCREMENT,
-    code         TEXT UNIQUE NOT NULL,
-    teamLeaderId TEXT NOT NULL,
-    campaignId   TEXT NOT NULL,
-    used         INTEGER NOT NULL DEFAULT 0,
-    createdAt    TEXT NOT NULL DEFAULT (datetime('now')),
-    usedAt       TEXT
-  );`);
+async function initDb() {
+  // campaigns
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS campaigns (
+      id TEXT PRIMARY KEY,
+      label TEXT NOT NULL,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    );
+  `);
 
-  // Feedback responses
-  db.run(`CREATE TABLE IF NOT EXISTS feedback (
-    id            INTEGER PRIMARY KEY AUTOINCREMENT,
-    campaignId    TEXT NOT NULL,
-    teamLeaderId  TEXT NOT NULL,
-    scoresJson    TEXT NOT NULL,
-    overallScore  REAL NOT NULL,
-    strengthsText TEXT,
-    devText       TEXT,
-    otherText     TEXT,
-    createdAt     TEXT NOT NULL DEFAULT (datetime('now'))
-  );`);
+  // team_leaders
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS team_leaders (
+      name TEXT PRIMARY KEY,
+      active BOOLEAN NOT NULL DEFAULT TRUE,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    );
+  `);
 
-  // Campaigns / cycles (typically one per year)
-  db.run(`CREATE TABLE IF NOT EXISTS campaigns (
-    id         INTEGER PRIMARY KEY AUTOINCREMENT,
-    campaignId TEXT UNIQUE NOT NULL,
-    label      TEXT NOT NULL,
-    isActive   INTEGER NOT NULL DEFAULT 1,
-    createdAt  TEXT NOT NULL DEFAULT (datetime('now'))
-  );`);
+  // codes (anonymous passcodes)
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS codes (
+      id SERIAL PRIMARY KEY,
+      code TEXT UNIQUE NOT NULL,
+      team_leader_id TEXT NOT NULL REFERENCES team_leaders(name),
+      campaign_id TEXT NOT NULL REFERENCES campaigns(id),
+      used BOOLEAN NOT NULL DEFAULT FALSE,
+      used_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    );
+  `);
 
-  // Team leaders (for dropdowns & consistency)
-  db.run(`CREATE TABLE IF NOT EXISTS team_leaders (
-    id       INTEGER PRIMARY KEY AUTOINCREMENT,
-    name     TEXT UNIQUE NOT NULL,
-    active   INTEGER NOT NULL DEFAULT 1,
-    createdAt TEXT NOT NULL DEFAULT (datetime('now'))
-  );`);
+  // feedback responses
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS feedback (
+      id SERIAL PRIMARY KEY,
+      code TEXT NOT NULL REFERENCES codes(code),
+      campaign_id TEXT NOT NULL,
+      team_leader_id TEXT NOT NULL,
+      q2 INTEGER,
+      q3 INTEGER,
+      q4 INTEGER,
+      q5 INTEGER,
+      q6 INTEGER,
+      q7 INTEGER,
+      q8 INTEGER,
+      q9 INTEGER,
+      q10 INTEGER,
+      q11 INTEGER,
+      q12 INTEGER,
+      q13 INTEGER,
+      q14 INTEGER,
+      q15 INTEGER,
+      q16 INTEGER,
+      overall_score NUMERIC,
+      strengths_text TEXT,
+      dev_text TEXT,
+      other_text TEXT,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    );
+  `);
 
-  // Seed default team leaders if none exist
-  db.get(`SELECT COUNT(*) AS cnt FROM team_leaders`, (err, row) => {
-    if (err) {
-      console.error("Error checking team_leaders:", err);
-      return;
-    }
-    if (row && row.cnt === 0) {
-      const defaultTLs = [
-        "Gill",
-        "Kristian",
-        "Nicola",
-        "Teri",
-        "Trish",
-        "Kate-Marie",
-        "Katie"
-      ];
-      const stmt = db.prepare(
-        `INSERT INTO team_leaders (name, active) VALUES (?, 1)`
-      );
-      defaultTLs.forEach(name => stmt.run(name));
-      stmt.finalize();
-      console.log("Seeded default team leaders.");
-    }
-  });
-});
-
-// ---------- UTILITIES ----------
-function makeSessionId() {
-  return (
-    Math.random().toString(36).slice(2) + Date.now().toString(36)
-  );
+  console.log("Postgres schema initialised");
 }
 
-function makeCode() {
+// ---------- HELPER FUNCTIONS ----------
+
+function randomCode() {
+  // short anonymous code, e.g. R7KM-3ZPD
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  const chunk = () =>
-    Array.from({ length: 4 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
-  return `${chunk()}-${chunk()}`;
+  let out = "";
+  for (let i = 0; i < 9; i++) {
+    if (i === 4) out += "-";
+    else out += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return out;
 }
 
-// In-memory mapping sessionId -> { codeId, teamLeaderId, campaignId }
-const sessionStore = new Map();
+function calcOverallScore(scores) {
+  const nums = Object.values(scores)
+    .map(Number)
+    .filter((n) => !isNaN(n));
+  if (!nums.length) return null;
+  const sum = nums.reduce((a, b) => a + b, 0);
+  return sum / nums.length;
+}
 
-// ---------- ADMIN AUTH ----------
+// Admin auth middleware
 function adminAuth(req, res, next) {
   if (!ADMIN_PASSWORD) {
-    return res
-      .status(500)
-      .json({ error: "Admin password not configured on server." });
+    return res.status(500).json({ error: "ADMIN_PASSWORD not configured on server." });
   }
   const key = req.headers["x-admin-key"];
   if (!key || key !== ADMIN_PASSWORD) {
-    return res.status(401).json({ error: "Unauthorised" });
+    return res.status(401).json({ error: "unauthorized" });
   }
   next();
 }
 
-// ---------- PARTICIPANT ROUTES ----------
+// ---------- PUBLIC API (users filling questionnaire) ----------
 
-// Start: user enters code + campaign/year
-app.post("/api/start", (req, res) => {
-  const { code, campaignId } = req.body;
-  if (!code || !campaignId) {
-    return res.status(400).json({ error: "Code and campaignId required." });
+// POST /api/start-session { code }
+app.post("/api/start-session", async (req, res) => {
+  const { code } = req.body;
+  if (!code) {
+    return res.status(400).json({ error: "Code is required." });
   }
 
-  db.get(
-    `SELECT id, teamLeaderId, campaignId, used
-     FROM codes
-     WHERE code = ? AND campaignId = ?`,
-    [code.trim(), campaignId],
-    (err, row) => {
-      if (err) return res.status(500).json({ error: "DB error." });
-      if (!row) {
-        return res.status(404).json({ error: "Code not recognised for that cycle." });
-      }
-      if (row.used) {
-        return res.status(409).json({ error: "This code has already been used." });
-      }
+  try {
+    const result = await pool.query(
+      `
+      SELECT c.code, c.campaign_id, c.team_leader_id, c.used,
+             cam.label AS campaign_label
+      FROM codes c
+      JOIN campaigns cam ON cam.id = c.campaign_id
+      WHERE c.code = $1
+      `,
+      [code.trim()]
+    );
 
-      const sessionId = makeSessionId();
-      sessionStore.set(sessionId, {
-        codeId: row.id,
-        teamLeaderId: row.teamLeaderId,
-        campaignId: row.campaignId
-      });
-
-      // We deliberately do NOT send back the TL name to the browser.
-      res.json({ sessionId });
+    if (!result.rowCount) {
+      return res.status(400).json({ error: "Code not found." });
     }
-  );
+
+    const row = result.rows[0];
+    if (row.used) {
+      return res.status(400).json({ error: "This code has already been used." });
+    }
+
+    res.json({
+      code: row.code,
+      campaignId: row.campaign_id,
+      campaignLabel: row.campaign_label,
+      teamLeaderId: row.team_leader_id,
+    });
+  } catch (err) {
+    console.error("Error in /api/start-session:", err);
+    res.status(500).json({ error: "Server error verifying code." });
+  }
 });
 
-// Submit responses
-app.post("/api/submit", (req, res) => {
-  const { sessionId, scores, comments } = req.body;
-  if (!sessionId || !scores) {
-    return res.status(400).json({ error: "Missing sessionId or scores." });
+// POST /api/submit-feedback
+// body: { code, campaignId, teamLeaderId, scores: {q2..q16}, strengthsText, devText, otherText }
+app.post("/api/submit-feedback", async (req, res) => {
+  const {
+    code,
+    campaignId,
+    teamLeaderId,
+    scores = {},
+    strengthsText,
+    devText,
+    otherText,
+  } = req.body;
+
+  if (!code || !campaignId || !teamLeaderId) {
+    return res.status(400).json({ error: "Missing required fields." });
   }
 
-  const sessionData = sessionStore.get(sessionId);
-  if (!sessionData) {
-    return res.status(400).json({ error: "Invalid or expired session." });
+  const overall = calcOverallScore(scores);
+
+  try {
+    // ensure code exists and not used
+    const cRes = await pool.query(
+      "SELECT id, used FROM codes WHERE code = $1",
+      [code.trim()]
+    );
+    if (!cRes.rowCount) {
+      return res.status(400).json({ error: "Invalid code." });
+    }
+    if (cRes.rows[0].used) {
+      return res.status(400).json({ error: "Code already used." });
+    }
+
+    await pool.query("BEGIN");
+
+    // insert feedback
+    await pool.query(
+      `
+      INSERT INTO feedback (
+        code, campaign_id, team_leader_id,
+        q2, q3, q4, q5, q6, q7, q8, q9, q10, q11, q12, q13, q14, q15, q16,
+        overall_score,
+        strengths_text, dev_text, other_text
+      )
+      VALUES (
+        $1, $2, $3,
+        $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18,
+        $19,
+        $20, $21, $22
+      )
+      `,
+      [
+        code.trim(),
+        campaignId,
+        teamLeaderId,
+        scores.q2,
+        scores.q3,
+        scores.q4,
+        scores.q5,
+        scores.q6,
+        scores.q7,
+        scores.q8,
+        scores.q9,
+        scores.q10,
+        scores.q11,
+        scores.q12,
+        scores.q13,
+        scores.q14,
+        scores.q15,
+        scores.q16,
+        overall,
+        strengthsText || null,
+        devText || null,
+        otherText || null,
+      ]
+    );
+
+    // mark code as used
+    await pool.query(
+      "UPDATE codes SET used = TRUE, used_at = NOW() WHERE code = $1",
+      [code.trim()]
+    );
+
+    await pool.query("COMMIT");
+    res.json({ ok: true });
+  } catch (err) {
+    await pool.query("ROLLBACK");
+    console.error("Error in /api/submit-feedback:", err);
+    res.status(500).json({ error: "Error saving feedback." });
   }
+});
 
-  const scoreValues = Object.values(scores)
-    .map(Number)
-    .filter(n => !isNaN(n));
-  if (!scoreValues.length) {
-    return res.status(400).json({ error: "No valid scores submitted." });
+// ---------- ADMIN API ----------
+
+// Get campaigns list
+app.get("/api/admin/campaigns", adminAuth, async (req, res) => {
+  try {
+    const result = await pool.query(
+      "SELECT id, label FROM campaigns ORDER BY created_at DESC"
+    );
+    res.json({ campaigns: result.rows });
+  } catch (err) {
+    console.error("Error /api/admin/campaigns:", err);
+    res.status(500).json({ error: "DB error fetching campaigns." });
   }
-
-  const overallScore =
-    scoreValues.reduce((sum, v) => sum + v, 0) / scoreValues.length;
-
-  const strengthsText = comments?.strengths || "";
-  const devText = comments?.development || "";
-  const otherText = comments?.other || "";
-
-  db.run(
-    `INSERT INTO feedback
-     (campaignId, teamLeaderId, scoresJson, overallScore,
-      strengthsText, devText, otherText)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`,
-    [
-      sessionData.campaignId,
-      sessionData.teamLeaderId,
-      JSON.stringify(scores),
-      overallScore,
-      strengthsText,
-      devText,
-      otherText
-    ],
-    function (err) {
-      if (err) return res.status(500).json({ error: "DB error saving feedback." });
-
-      // Mark code as used
-      db.run(
-        `UPDATE codes SET used = 1, usedAt = datetime('now') WHERE id = ?`,
-        [sessionData.codeId]
-      );
-
-      // Clean up session
-      sessionStore.delete(sessionId);
-
-      res.json({ ok: true });
-    }
-  );
 });
 
-// ---------- PUBLIC CURRENT-CAMPAIGN ROUTE ----------
-
-// Public endpoint: current active campaign (no auth)
-app.get("/api/current-campaign", (req, res) => {
-  db.get(
-    `SELECT campaignId
-     FROM campaigns
-     WHERE isActive = 1
-     ORDER BY createdAt DESC
-     LIMIT 1`,
-    [],
-    (err, row) => {
-      if (err) {
-        return res.status(500).json({ error: "DB error." });
-      }
-      if (row) {
-        return res.json({ campaignId: row.campaignId });
-      }
-
-      // Fallback: latest campaign from feedback if no campaigns explicitly created yet
-      db.get(
-        `SELECT campaignId
-         FROM feedback
-         ORDER BY createdAt DESC
-         LIMIT 1`,
-        [],
-        (err2, row2) => {
-          if (err2) return res.status(500).json({ error: "DB error." });
-          if (row2) return res.json({ campaignId: row2.campaignId });
-          // Nothing configured yet
-          res.json({ campaignId: null });
-        }
-      );
-    }
-  );
-});
-
-// ---------- ADMIN ROUTES ----------
-
-// List campaigns (cycles)
-app.get("/api/admin/campaigns", adminAuth, (req, res) => {
-  db.all(
-    `SELECT campaignId, label, isActive
-     FROM campaigns
-     ORDER BY createdAt DESC`,
-    [],
-    (err, rows) => {
-      if (err) return res.status(500).json({ error: "DB error." });
-
-      if (rows.length) {
-        return res.json({
-          campaigns: rows.map(r => ({
-            id: r.campaignId,
-            label: r.label,
-            isActive: !!r.isActive
-          }))
-        });
-      }
-
-      // Fallback if campaigns not set up yet – infer from feedback
-      db.all(
-        `SELECT DISTINCT campaignId FROM feedback ORDER BY campaignId DESC`,
-        [],
-        (err2, rows2) => {
-          if (err2) return res.status(500).json({ error: "DB error." });
-          const campaigns = rows2.map(r => ({
-            id: r.campaignId,
-            label: r.campaignId,
-            isActive: true
-          }));
-          res.json({ campaigns });
-        }
-      );
-    }
-  );
-});
-
-// Create a new cycle (and make it active)
-app.post("/api/admin/campaigns", adminAuth, (req, res) => {
+// Create a new campaign
+app.post("/api/admin/campaigns", adminAuth, async (req, res) => {
   const { campaignId, label } = req.body;
   if (!campaignId || !label) {
-    return res.status(400).json({ error: "campaignId and label are required." });
+    return res.status(400).json({ error: "campaignId and label required." });
   }
 
-  // Make this the active cycle by deactivating others first
-  db.run(`UPDATE campaigns SET isActive = 0`, [], err => {
-    if (err) {
-      return res.status(500).json({ error: "DB error updating cycles." });
-    }
-
-    db.run(
-      `INSERT INTO campaigns (campaignId, label, isActive)
-       VALUES (?, ?, 1)`,
-      [campaignId, label],
-      function (err2) {
-        if (err2) {
-          if (err2.message.includes("UNIQUE")) {
-            return res.status(409).json({ error: "A cycle with that ID already exists." });
-          }
-          return res.status(500).json({ error: "DB error creating cycle." });
-        }
-        res.json({ ok: true });
-      }
+  try {
+    await pool.query(
+      `
+      INSERT INTO campaigns (id, label)
+      VALUES ($1, $2)
+      ON CONFLICT (id) DO NOTHING
+      `,
+      [campaignId.trim(), label.trim()]
     );
-  });
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("Error POST /api/admin/campaigns:", err);
+    res.status(500).json({ error: "DB error creating campaign." });
+  }
 });
 
-// Overview per TL in a cycle
-app.get("/api/admin/overview", adminAuth, (req, res) => {
-  const { campaignId } = req.query;
-  if (!campaignId) return res.status(400).json({ error: "campaignId required" });
+// Team leaders list
+app.get("/api/admin/team-leaders", adminAuth, async (req, res) => {
+  try {
+    const result = await pool.query(
+      "SELECT name FROM team_leaders WHERE active = TRUE ORDER BY name"
+    );
+    res.json({ teamLeaders: result.rows.map((r) => r.name) });
+  } catch (err) {
+    console.error("Error /api/admin/team-leaders GET:", err);
+    res.status(500).json({ error: "DB error fetching TLs." });
+  }
+});
 
-  db.all(
-    `SELECT teamLeaderId,
-            COUNT(*) as responseCount,
-            AVG(overallScore) as avgScore
-     FROM feedback
-     WHERE campaignId = ?
-     GROUP BY teamLeaderId
-     ORDER BY teamLeaderId`,
-    [campaignId],
-    (err, rows) => {
-      if (err) return res.status(500).json({ error: "DB error." });
-      res.json({ results: rows || [] });
+// Add/reactivate TL
+app.post("/api/admin/team-leaders", adminAuth, async (req, res) => {
+  const { name } = req.body;
+  if (!name) return res.status(400).json({ error: "name required." });
+
+  try {
+    await pool.query(
+      `
+      INSERT INTO team_leaders (name, active)
+      VALUES ($1, TRUE)
+      ON CONFLICT (name) DO UPDATE SET active = TRUE
+      `,
+      [name.trim()]
+    );
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("Error POST /api/admin/team-leaders:", err);
+    res.status(500).json({ error: "DB error upserting TL." });
+  }
+});
+
+// Deactivate TL
+app.delete("/api/admin/team-leaders", adminAuth, async (req, res) => {
+  const { name } = req.body;
+  if (!name) return res.status(400).json({ error: "name required." });
+
+  try {
+    const result = await pool.query(
+      "UPDATE team_leaders SET active = FALSE WHERE name = $1",
+      [name.trim()]
+    );
+    res.json({ ok: true, affectedRows: result.rowCount });
+  } catch (err) {
+    console.error("Error DELETE /api/admin/team-leaders:", err);
+    res.status(500).json({ error: "DB error deactivating TL." });
+  }
+});
+
+// Generate codes
+app.post("/api/admin/generate-codes", adminAuth, async (req, res) => {
+  const { campaignId, teamLeaderId, count } = req.body;
+  if (!campaignId || !teamLeaderId || !count) {
+    return res.status(400).json({ error: "Missing fields." });
+  }
+  const n = Math.max(1, Math.min(Number(count) || 1, 500));
+
+  try {
+    const codes = [];
+    await pool.query("BEGIN");
+
+    for (let i = 0; i < n; i++) {
+      let code;
+      let inserted = false;
+      while (!inserted) {
+        code = randomCode();
+        try {
+          await pool.query(
+            `
+            INSERT INTO codes (code, team_leader_id, campaign_id)
+            VALUES ($1, $2, $3)
+            `,
+            [code, teamLeaderId.trim(), campaignId.trim()]
+          );
+          inserted = true;
+        } catch (e) {
+          // collision -> retry
+        }
+      }
+      codes.push(code);
     }
-  );
+
+    await pool.query("COMMIT");
+    res.json({ codes });
+  } catch (err) {
+    await pool.query("ROLLBACK");
+    console.error("Error /api/admin/generate-codes:", err);
+    res.status(500).json({ error: "Error generating codes." });
+  }
 });
 
-// Detailed data for one TL in a cycle
-app.get("/api/admin/detail", adminAuth, (req, res) => {
+// Overview for a campaign
+app.get("/api/admin/overview", adminAuth, async (req, res) => {
+  const { campaignId } = req.query;
+  if (!campaignId) {
+    return res.status(400).json({ error: "campaignId required." });
+  }
+
+  try {
+    const result = await pool.query(
+      `
+      SELECT team_leader_id,
+             COUNT(*) AS response_count,
+             AVG(overall_score) AS avg_score
+      FROM feedback
+      WHERE campaign_id = $1
+      GROUP BY team_leader_id
+      ORDER BY team_leader_id
+      `,
+      [campaignId]
+    );
+
+    const rows = result.rows.map((r) => ({
+      teamLeaderId: r.team_leader_id,
+      responseCount: Number(r.response_count),
+      avgScore: r.avg_score ? Number(r.avg_score) : null,
+    }));
+
+    res.json({ results: rows });
+  } catch (err) {
+    console.error("Error /api/admin/overview:", err);
+    res.status(500).json({ error: "DB error fetching overview." });
+  }
+});
+
+// Detail for TL in campaign
+app.get("/api/admin/detail", adminAuth, async (req, res) => {
   const { campaignId, teamLeaderId } = req.query;
   if (!campaignId || !teamLeaderId) {
-    return res
-      .status(400)
-      .json({ error: "campaignId and teamLeaderId required" });
+    return res.status(400).json({ error: "campaignId and teamLeaderId required." });
   }
 
-  db.all(
-    `SELECT scoresJson, overallScore, strengthsText, devText, otherText
-     FROM feedback
-     WHERE campaignId = ? AND teamLeaderId = ?`,
-    [campaignId, teamLeaderId],
-    (err, rows) => {
-      if (err) return res.status(500).json({ error: "DB error." });
+  try {
+    const base = await pool.query(
+      `
+      SELECT
+        COUNT(*) AS response_count,
+        AVG(overall_score) AS avg_overall,
+        AVG(q2) AS q2,  AVG(q3) AS q3,  AVG(q4) AS q4,
+        AVG(q5) AS q5,  AVG(q6) AS q6,  AVG(q7) AS q7,
+        AVG(q8) AS q8,  AVG(q9) AS q9,  AVG(q10) AS q10,
+        AVG(q11) AS q11,AVG(q12) AS q12,AVG(q13) AS q13,
+        AVG(q14) AS q14,AVG(q15) AS q15,AVG(q16) AS q16
+      FROM feedback
+      WHERE campaign_id = $1 AND team_leader_id = $2
+      `,
+      [campaignId, teamLeaderId]
+    );
 
-      const responseCount = rows.length;
-      if (!responseCount) {
-        return res.json({
-          campaignId,
-          teamLeaderId,
-          responseCount: 0,
-          avgOverall: null,
-          questionAverages: {},
-          comments: null
-        });
-      }
+    const row = base.rows[0];
+    const responseCount = Number(row.response_count) || 0;
 
-      const avgOverall =
-        rows.reduce((sum, r) => sum + r.overallScore, 0) / responseCount;
+    const questionAverages = {};
+    for (let q = 2; q <= 16; q++) {
+      const key = "q" + q;
+      const value = row[key];
+      questionAverages[key] = value != null ? Number(value) : null;
+    }
 
-      const sums = {};
-      const counts = {};
+    let comments = null;
+    if (responseCount >= MIN_COMMENTS_FOR_DISPLAY) {
+      const cRes = await pool.query(
+        `
+        SELECT strengths_text, dev_text, other_text
+        FROM feedback
+        WHERE campaign_id = $1 AND team_leader_id = $2
+        ORDER BY created_at
+        `,
+        [campaignId, teamLeaderId]
+      );
 
       const strengths = [];
       const devs = [];
       const others = [];
 
-      for (const row of rows) {
-        let scores;
-        try {
-          scores = JSON.parse(row.scoresJson || "{}");
-        } catch {
-          scores = {};
-        }
-
-        for (const [qid, val] of Object.entries(scores)) {
-          const num = Number(val);
-          if (isNaN(num)) continue;
-          sums[qid] = (sums[qid] || 0) + num;
-          counts[qid] = (counts[qid] || 0) + 1;
-        }
-
-        if (row.strengthsText) strengths.push(row.strengthsText);
-        if (row.devText) devs.push(row.devText);
-        if (row.otherText) others.push(row.otherText);
+      for (const c of cRes.rows) {
+        if (c.strengths_text) strengths.push(c.strengths_text);
+        if (c.dev_text) devs.push(c.dev_text);
+        if (c.other_text) others.push(c.other_text);
       }
 
-      const questionAverages = {};
-      for (const [qid, sum] of Object.entries(sums)) {
-        questionAverages[qid] = sum / counts[qid];
-      }
-
-      const comments =
-        responseCount >= MIN_COMMENTS_FOR_DISPLAY
-          ? { strengths, devs, others }
-          : null;
-
-      res.json({
-        campaignId,
-        teamLeaderId,
-        responseCount,
-        avgOverall,
-        questionAverages,
-        comments
-      });
+      comments = { strengths, devs, others };
     }
-  );
-});
 
-// Generate codes (used from admin UI)
-app.post("/api/admin/generate-codes", adminAuth, (req, res) => {
-  const { campaignId, teamLeaderId, count } = req.body;
-  if (!campaignId || !teamLeaderId || !count) {
-    return res
-      .status(400)
-      .json({ error: "campaignId, teamLeaderId and count are required." });
-  }
-  const n = Number(count);
-  if (!Number.isInteger(n) || n <= 0 || n > 500) {
-    return res
-      .status(400)
-      .json({ error: "Count must be an integer between 1 and 500." });
-  }
-
-  const codes = [];
-  db.serialize(() => {
-    db.run("BEGIN TRANSACTION;");
-    for (let i = 0; i < n; i++) {
-      const code = makeCode();
-      db.run(
-        `INSERT INTO codes (code, teamLeaderId, campaignId)
-         VALUES (?, ?, ?)`,
-        [code, teamLeaderId, campaignId]
-      );
-      codes.push(code);
-    }
-    db.run("COMMIT;", err => {
-      if (err) return res.status(500).json({ error: "DB error generating codes." });
-      res.json({ codes });
+    res.json({
+      responseCount,
+      avgOverall: row.avg_overall != null ? Number(row.avg_overall) : null,
+      questionAverages,
+      comments,
     });
-  });
+  } catch (err) {
+    console.error("Error /api/admin/detail:", err);
+    res.status(500).json({ error: "DB error fetching detail." });
+  }
 });
 
-// Delete all responses for a TL in a cycle (clean test data)
-app.post("/api/admin/delete-feedback", adminAuth, (req, res) => {
-  const { campaignId, teamLeaderId } = req.body;
-  if (!campaignId || !teamLeaderId) {
-    return res
-      .status(400)
-      .json({ error: "campaignId and teamLeaderId required." });
+// AI summary of comments
+app.get("/api/admin/ai-summary", adminAuth, async (req, res) => {
+  if (!openai) {
+    return res.status(500).json({ error: "OpenAI not configured on server." });
   }
 
-  db.run(
-    `DELETE FROM feedback WHERE campaignId = ? AND teamLeaderId = ?`,
-    [campaignId, teamLeaderId],
-    function (err) {
-      if (err) return res.status(500).json({ error: "DB error deleting feedback." });
-      res.json({ ok: true, deletedRows: this.changes });
-    }
-  );
-});
-
-// AI summary of comments for a TL in a cycle
-app.get("/api/admin/ai-summary", adminAuth, (req, res) => {
-  if (!OPENAI_API_KEY || !openai) {
-    return res
-      .status(501)
-      .json({ error: "AI summary not configured (no OPENAI_API_KEY)." });
-  }
   const { campaignId, teamLeaderId } = req.query;
   if (!campaignId || !teamLeaderId) {
-    return res
-      .status(400)
-      .json({ error: "campaignId and teamLeaderId required" });
+    return res.status(400).json({ error: "campaignId and teamLeaderId required." });
   }
 
-  db.all(
-    `SELECT strengthsText, devText, otherText
-     FROM feedback
-     WHERE campaignId = ? AND teamLeaderId = ?`,
-    [campaignId, teamLeaderId],
-    async (err, rows) => {
-      if (err) return res.status(500).json({ error: "DB error." });
-      if (!rows.length) {
-        return res.json({ summary: "No comments available." });
-      }
+  try {
+    const result = await pool.query(
+      `
+      SELECT strengths_text, dev_text, other_text
+      FROM feedback
+      WHERE campaign_id = $1 AND team_leader_id = $2
+      `,
+      [campaignId, teamLeaderId]
+    );
 
-      const allText = rows
-        .map(r =>
-          [r.strengthsText, r.devText, r.otherText].filter(Boolean).join("\n")
-        )
-        .filter(Boolean)
-        .join("\n\n---\n\n");
-
-      try {
-        const completion = await openai.responses.create({
-          model: "gpt-4.1-mini",
-          input: [
-            {
-              role: "system",
-              content:
-                "You are summarising anonymous 360-degree feedback comments. " +
-                "Only describe overall themes and patterns. " +
-                "Do NOT quote or closely paraphrase any original sentence. " +
-                "Do NOT mention anything that could identify a specific person or incident. " +
-                "Use neutral, HR-safe language."
-            },
-            {
-              role: "user",
-              content:
-                "Here are comments from multiple people for one team leader. " +
-                "Summarise the main strengths and main development themes in 2–4 short paragraphs.\n\n" +
-                allText
-            }
-          ]
-        });
-
-        const summary = completion.output[0].content[0].text;
-        res.json({ summary });
-      } catch (e) {
-        console.error("Error from OpenAI:", e);
-        res.status(500).json({ error: "Error calling AI service." });
-      }
+    if (!result.rowCount || result.rowCount < MIN_COMMENTS_FOR_DISPLAY) {
+      return res.status(400).json({
+        error: `Not enough responses to generate an AI summary (need at least ${MIN_COMMENTS_FOR_DISPLAY}).`,
+      });
     }
-  );
+
+    const parts = [];
+    for (const r of result.rows) {
+      if (r.strengths_text) parts.push("Strengths: " + r.strengths_text);
+      if (r.dev_text) parts.push("Development: " + r.dev_text);
+      if (r.other_text) parts.push("Other: " + r.other_text);
+    }
+
+    const prompt = `
+You are helping summarise anonymous 360° feedback for a team leader.
+You will receive multiple short text comments across strengths, development areas, and other notes.
+
+Your job:
+- Identify 3–5 key positive themes
+- Identify 3–5 key development themes
+- Keep wording broad enough that no individual comment is recognisable
+- Do NOT quote or paraphrase any single comment directly
+- Keep it neutral, constructive, and suitable to paste into a feedback report.
+
+Comments:
+${parts.join("\n")}
+`;
+
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        { role: "system", content: "You summarise patterns in feedback without exposing individual comments." },
+        { role: "user", content: prompt },
+      ],
+      temperature: 0.4,
+    });
+
+    const summary = completion.choices[0].message.content.trim();
+    res.json({ summary });
+  } catch (err) {
+    console.error("Error /api/admin/ai-summary:", err);
+    res.status(500).json({ error: "Error generating AI summary." });
+  }
 });
 
-// ---------- TEAM LEADER ADMIN (for dropdowns, editing TL list) ----------
+// Delete feedback for TL in a campaign
+app.post("/api/admin/delete-feedback", adminAuth, async (req, res) => {
+  const { campaignId, teamLeaderId } = req.body;
+  if (!campaignId || !teamLeaderId) {
+    return res.status(400).json({ error: "campaignId and teamLeaderId required." });
+  }
 
-// Get active team leaders
-app.get("/api/admin/team-leaders", adminAuth, (req, res) => {
-  db.all(
-    `SELECT name FROM team_leaders WHERE active = 1 ORDER BY name`,
-    [],
-    (err, rows) => {
-      if (err) return res.status(500).json({ error: "DB error." });
-      res.json({ teamLeaders: rows.map(r => r.name) });
+  try {
+    await pool.query("BEGIN");
+    const fbRes = await pool.query(
+      `
+      DELETE FROM feedback
+      WHERE campaign_id = $1 AND team_leader_id = $2
+      RETURNING code
+      `,
+      [campaignId, teamLeaderId]
+    );
+    const deletedRows = fbRes.rowCount;
+
+    // optionally free up codes again
+    const codesToReset = fbRes.rows.map((r) => r.code);
+    if (codesToReset.length) {
+      await pool.query(
+        `
+        UPDATE codes
+        SET used = FALSE, used_at = NULL
+        WHERE code = ANY($1::text[])
+        `,
+        [codesToReset]
+      );
     }
-  );
-});
 
-// Add or reactivate a TL
-app.post("/api/admin/team-leaders", adminAuth, (req, res) => {
-  const { name } = req.body;
-  if (!name) return res.status(400).json({ error: "name required." });
-
-  db.run(
-    `INSERT INTO team_leaders (name, active)
-     VALUES (?, 1)
-     ON CONFLICT(name) DO UPDATE SET active = 1`,
-    [name.trim()],
-    function (err) {
-      if (err) return res.status(500).json({ error: "DB error saving TL." });
-      res.json({ ok: true });
-    }
-  );
-});
-
-// Deactivate a TL (won't appear in dropdowns)
-app.delete("/api/admin/team-leaders", adminAuth, (req, res) => {
-  const { name } = req.body;
-  if (!name) return res.status(400).json({ error: "name required." });
-
-  db.run(
-    `UPDATE team_leaders SET active = 0 WHERE name = ?`,
-    [name.trim()],
-    function (err) {
-      if (err) return res.status(500).json({ error: "DB error updating TL." });
-      res.json({ ok: true, affectedRows: this.changes });
-    }
-  );
+    await pool.query("COMMIT");
+    res.json({ ok: true, deletedRows });
+  } catch (err) {
+    await pool.query("ROLLBACK");
+    console.error("Error /api/admin/delete-feedback:", err);
+    res.status(500).json({ error: "Error deleting feedback." });
+  }
 });
 
 // ---------- START SERVER ----------
-app.listen(PORT, () => {
-  console.log(`Server listening on http://localhost:${PORT}`);
-});
+
+initDb()
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`Server listening on port ${PORT}`);
+    });
+  })
+  .catch((err) => {
+    console.error("Failed to initialize DB", err);
+    process.exit(1);
+  });
