@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>360° Review – Admin</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f4f4f5;
+      margin: 0;
+      padding: 2rem 1rem;
+    }
+    .shell {
+      max-width: 1100px;
+      margin: 0 auto;
+      background: #fff;
+      border-radius: 12px;
+      padding: 1.8rem 2.3rem;
+      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
+    }
+    h1 { margin-top: 0; }
+    select, input[type="text"], input[type="number"], input[type="password"] {
+      padding: 0.35rem 0.5rem;
+      border-radius: 6px;
+      border: 1px solid #d4d4d8;
+      margin-right: 0.5rem;
+      font-size: 0.9rem;
+    }
+    button {
+      padding: 0.35rem 0.8rem;
+      border-radius: 6px;
+      border: none;
+      background: #2563eb;
+      color: white;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+    button.secondary {
+      background: #e5e7eb;
+      color: #111827;
+    }
+    button.danger {
+      background: #dc2626;
+    }
+    button:hover:not(.secondary) { background: #1d4ed8; }
+    button.secondary:hover { background: #d4d4d8; }
+    button.danger:hover { background: #b91c1c; }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-top: 1rem;
+      font-size: 0.9rem;
+    }
+    th, td {
+      border: 1px solid #e4e4e7;
+      padding: 0.4rem 0.6rem;
+      text-align: left;
+    }
+    th { background: #f9fafb; }
+    .muted { color: #6b7280; font-size: 0.86rem; }
+    .pill {
+      display: inline-block;
+      border-radius: 999px;
+      padding: 0.1rem 0.55rem;
+      font-size: 0.78rem;
+      border: 1px solid #d4d4d8;
+    }
+    .pill.good { background: #ecfdf5; border-color: #22c55e; color: #15803d;}
+    .pill.mixed { background: #fefce8; border-color: #f97316; color: #92400e;}
+    .pill.bad { background: #fef2f2; border-color: #ef4444; color: #b91c1c;}
+    .comments { margin-top: 1rem; }
+    .comment-block {
+      background: #f9fafb;
+      border-radius: 8px;
+      padding: 0.7rem 0.9rem;
+      margin-bottom: 0.5rem;
+      border: 1px solid #e5e7eb;
+      white-space: pre-wrap;
+    }
+    hr { margin: 1.5rem 0; }
+    .layout {
+      display: grid;
+      grid-template-columns: 2fr 1.5fr;
+      gap: 1.5rem;
+      align-items: flex-start;
+    }
+    canvas { background: #f9fafb; border-radius: 8px; padding: 0.5rem; }
+
+    /* NEW: TL tag styling */
+    .tl-pill {
+      margin-right: 0.35rem;
+      margin-bottom: 0.35rem;
+    }
+    .tl-pill button {
+      border: none;
+      background: transparent;
+      padding: 0;
+      margin-left: 0.25rem;
+      cursor: pointer;
+      font-size: 0.8rem;
+      color: #4b5563;
+    }
+    .tl-pill button:hover {
+      color: #b91c1c;
+    }
+  </style>
+
+  <!-- Charts & PDF libs from CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+  <div class="shell">
+
+    <!-- LOGIN BLOCK -->
+    <div id="login-block">
+      <h1>Admin Login</h1>
+      <p class="muted">Enter the admin password to access dashboards and code generation.</p>
+      <input type="password" id="admin-password" placeholder="Admin password" />
+      <button id="login-btn">Login</button>
+      <div id="login-error" class="muted" style="color:#b91c1c;"></div>
+      <hr>
+    </div>
+
+    <!-- ADMIN CONTENT (hidden until login) -->
+    <div id="admin-content" style="display:none;">
+
+      <h1>360° Review – Admin Dashboard</h1>
+      <p class="muted">Manage review cycles, view anonymous summaries, generate codes and export reports.</p>
+
+      <!-- CREATE CYCLE -->
+      <h2>Create TL review cycle</h2>
+      <p class="muted">Use a simple ID (e.g. <code>2025-360</code>) and a friendly label (e.g. “2025 Team Leader 360 Review”).</p>
+      <div>
+        <label>Cycle ID:
+          <input type="text" id="cycle-id" placeholder="2025-360" />
+        </label>
+        <label>Label:
+          <input type="text" id="cycle-label" placeholder="2025 Team Leader 360 Review" style="width:260px;" />
+        </label>
+        <button id="create-cycle-btn">Create cycle</button>
+        <span id="create-cycle-msg" class="muted"></span>
+      </div>
+
+      <!-- NEW: TEAM LEADER MANAGEMENT -->
+      <h2 style="margin-top:1.5rem;">Team leaders</h2>
+      <p class="muted">
+        Manage the list of team leaders used for passcodes and reporting.
+        Names are never shown to reviewers.
+      </p>
+      <div id="tl-list" style="margin:0.5rem 0 0.3rem;"></div>
+      <div>
+        <label>New / reactivate TL:
+          <input type="text" id="tl-new-name" placeholder="e.g. Gill" />
+        </label>
+        <button id="tl-add-btn">Save</button>
+        <span id="tl-msg" class="muted"></span>
+      </div>
+
+      <hr>
+
+      <!-- CAMPAIGN SELECTOR -->
+      <h2>View cycle</h2>
+      <div>
+        <label>
+          Cycle:
+          <select id="campaign-select"></select>
+        </label>
+        <button id="refresh-overview">Refresh overview</button>
+      </div>
+
+      <!-- OVERVIEW TABLE -->
+      <h3>Overview</h3>
+      <table id="overview-table">
+        <thead>
+          <tr>
+            <th>Team Leader</th>
+            <th>Responses</th>
+            <th>Overall avg</th>
+            <th>Summary</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+
+      <!-- DETAIL VIEW -->
+      <h3>Detail</h3>
+      <p class="muted" id="detail-intro">Select a team leader from the overview to see detail.</p>
+
+      <div id="detail-block" style="display:none;">
+        <div class="layout">
+          <div>
+            <p><strong id="detail-title"></strong></p>
+            <p class="muted" id="detail-summary-text"></p>
+
+            <button id="ai-summary-btn">Generate AI summary of comments</button>
+            <button id="pdf-btn" class="secondary">Download PDF report</button>
+            <button id="delete-responses-btn" class="danger">Delete all responses for this TL in this cycle</button>
+            <p class="muted" id="ai-summary-text" style="margin-top:0.3rem;"></p>
+
+            <h4>Category scores</h4>
+            <table id="category-table">
+              <thead>
+                <tr>
+                  <th>Category</th>
+                  <th>Avg score</th>
+                  <th>Interpretation</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+
+            <div id="comments-section" class="comments"></div>
+          </div>
+
+          <div>
+            <h4>Charts</h4>
+            <canvas id="radarChart" height="220"></canvas>
+            <canvas id="barChart" height="220" style="margin-top:1rem;"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <hr>
+
+      <!-- CODE GENERATOR -->
+      <h2>Generate passcodes</h2>
+      <p class="muted">Generate anonymous codes for a specific TL and cycle.</p>
+
+      <div>
+        <label>Cycle ID:
+          <input type="text" id="gen-campaign" placeholder="e.g. 2025-360" />
+        </label>
+        <label>Team Leader:
+          <!-- NEW: dropdown instead of free-text -->
+          <select id="gen-tl-select"></select>
+        </label>
+        <label>Count:
+          <input type="number" id="gen-count" min="1" max="500" value="10" />
+        </label>
+        <button id="gen-btn">Generate codes</button>
+      </div>
+
+      <pre id="gen-output"
+           style="margin-top:0.7rem; background:#f9fafb; padding:0.7rem;
+                  border-radius:6px; border:1px solid #e5e7eb;
+                  max-height:200px; overflow:auto;"></pre>
+
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = "";
+
+    // ADMIN AUTH
+    let adminKey = null;
+    function authHeaders() {
+      return adminKey ? { "x-admin-key": adminKey } : {};
+    }
+
+    // NEW: Team leaders list
+    let teamLeaders = [];
+
+    async function attemptLogin() {
+      const pwd = document.getElementById("admin-password").value;
+      const errEl = document.getElementById("login-error");
+      errEl.textContent = "";
+
+      if (!pwd) {
+        errEl.textContent = "Enter the admin password.";
+        return;
+      }
+      adminKey = pwd;
+
+      const res = await fetch(API_BASE + "/api/admin/campaigns", {
+        headers: authHeaders()
+      });
+
+      if (!res.ok) {
+        adminKey = null;
+        errEl.textContent = "Incorrect password or server not configured.";
+        return;
+      }
+
+      const data = await res.json();
+      populateCampaignSelection(data.campaigns || []);
+
+      // NEW: load team leaders for dropdowns & tags
+      await loadTeamLeaders();
+
+      document.getElementById("login-block").style.display = "none";
+      document.getElementById("admin-content").style.display = "block";
+
+      await loadOverview();
+    }
+
+    document.getElementById("login-btn").addEventListener("click", attemptLogin);
+
+    function populateCampaignSelection(campaigns) {
+      const sel = document.getElementById("campaign-select");
+      sel.innerHTML = "";
+      if (!campaigns.length) {
+        const opt = document.createElement("option");
+        opt.value = "";
+        opt.textContent = "No cycles yet";
+        sel.appendChild(opt);
+        return;
+      }
+      campaigns.forEach(c => {
+        const opt = document.createElement("option");
+        opt.value = c.id;
+        opt.textContent = c.label + " (" + c.id + ")";
+        sel.appendChild(opt);
+      });
+    }
+
+    // Create cycle
+    async function createCycle() {
+      const id = document.getElementById("cycle-id").value.trim();
+      const label = document.getElementById("cycle-label").value.trim();
+      const msg = document.getElementById("create-cycle-msg");
+      msg.textContent = "";
+
+      if (!id || !label) {
+        msg.textContent = "Provide both an ID and a label.";
+        return;
+      }
+
+      const res = await fetch(API_BASE + "/api/admin/campaigns", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...authHeaders()
+        },
+        body: JSON.stringify({ campaignId: id, label })
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        msg.textContent = data.error || "Error creating cycle.";
+        return;
+      }
+
+      msg.textContent = "Cycle created. It will appear in the dropdown above.";
+      // Refresh campaigns list
+      const res2 = await fetch(API_BASE + "/api/admin/campaigns", {
+        headers: authHeaders()
+      });
+      const data2 = await res2.json();
+      populateCampaignSelection(data2.campaigns || []);
+    }
+
+    document.getElementById("create-cycle-btn").addEventListener("click", createCycle);
+
+    // Interpretation helper
+    function interpretScore(score) {
+      if (score == null || isNaN(score)) return { label: "No data", class: "" };
+      if (score >= 4.25) return { label: "Very strong", class: "good" };
+      if (score >= 3.75) return { label: "Strong", class: "good" };
+      if (score >= 3.25) return { label: "Generally positive", class: "mixed" };
+      if (score >= 3.0) return { label: "Mixed", class: "mixed" };
+      return { label: "Needs improvement", class: "bad" };
+    }
+
+    async function loadOverview() {
+      const campaignId = document.getElementById("campaign-select").value;
+      if (!campaignId) return;
+
+      const res = await fetch(
+        API_BASE + `/api/admin/overview?campaignId=${encodeURIComponent(campaignId)}`,
+        { headers: authHeaders() }
+      );
+      const data = await res.json();
+      const tbody = document.querySelector("#overview-table tbody");
+      tbody.innerHTML = "";
+
+      (data.results || []).forEach(row => {
+        const tr = document.createElement("tr");
+        tr.dataset.tl = row.teamLeaderId;
+
+        const interp = interpretScore(row.avgScore);
+
+        tr.innerHTML = `
+          <td>${row.teamLeaderId}</td>
+          <td>${row.responseCount}</td>
+          <td>${row.avgScore ? row.avgScore.toFixed(2) : "-"}</td>
+          <td><span class="pill ${interp.class}">${interp.label}</span></td>
+        `;
+
+        tr.addEventListener("click", () =>
+          loadDetail(campaignId, row.teamLeaderId)
+        );
+
+        tbody.appendChild(tr);
+      });
+    }
+
+    document.getElementById("refresh-overview").addEventListener("click", loadOverview);
+
+    // QUESTION GROUPS
+    const questionGroups = {
+      "Leadership & Management": ["q2", "q3", "q4"],
+      "Communication": ["q5", "q6", "q7"],
+      "Team Support & Development": ["q8", "q9", "q10"],
+      "Collaboration & Culture": ["q11", "q12", "q13"],
+      "Execution & Accountability": ["q14", "q15", "q16"]
+    };
+
+    let currentCampaignId = null;
+    let currentTLId = null;
+    let lastDetailData = null;
+    let radarChart = null;
+    let barChart = null;
+
+    async function loadDetail(campaignId, teamLeaderId) {
+      currentCampaignId = campaignId;
+      currentTLId = teamLeaderId;
+
+      const res = await fetch(
+        API_BASE + `/api/admin/detail?campaignId=${encodeURIComponent(campaignId)}&teamLeaderId=${encodeURIComponent(teamLeaderId)}`,
+        { headers: authHeaders() }
+      );
+      const data = await res.json();
+      lastDetailData = data;
+
+      document.getElementById("detail-intro").style.display = "none";
+      const block = document.getElementById("detail-block");
+      block.style.display = "block";
+
+      document.getElementById("detail-title").textContent =
+        `${teamLeaderId} – ${data.responseCount} responses, overall avg ${data.avgOverall ? data.avgOverall.toFixed(2) : "-"}`;
+
+      // Category scores
+      const tbody = document.querySelector("#category-table tbody");
+      tbody.innerHTML = "";
+
+      const catScores = {};
+      for (const [cat, qids] of Object.entries(questionGroups)) {
+        let sum = 0, count = 0;
+        qids.forEach(qid => {
+          const v = data.questionAverages[qid];
+          if (v) { sum += v; count++; }
+        });
+        const avg = count ? sum / count : null;
+        catScores[cat] = avg;
+
+        const interp = interpretScore(avg);
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${cat}</td>
+          <td>${avg ? avg.toFixed(2) : "-"}</td>
+          <td><span class="pill ${interp.class}">${interp.label}</span></td>
+        `;
+        tbody.appendChild(tr);
+      }
+
+      // Summary text
+      document.getElementById("detail-summary-text").textContent =
+        buildSummaryText(data, catScores);
+
+      // Comments area
+      const commentsDiv = document.getElementById("comments-section");
+      commentsDiv.innerHTML = "";
+
+      if (!data.comments) {
+        commentsDiv.innerHTML =
+          `<p class="muted">Comments hidden until 3+ responses to protect anonymity.</p>`;
+      } else {
+        const { strengths, devs, others } = data.comments;
+
+        if (strengths.length) {
+          commentsDiv.innerHTML += "<h4>Strengths (themes)</h4>";
+          strengths.forEach(c => {
+            const div = document.createElement("div");
+            div.className = "comment-block";
+            div.textContent = c;
+            commentsDiv.appendChild(div);
+          });
+        }
+
+        if (devs.length) {
+          commentsDiv.innerHTML += "<h4>Development areas (themes)</h4>";
+          devs.forEach(c => {
+            const div = document.createElement("div");
+            div.className = "comment-block";
+            div.textContent = c;
+            commentsDiv.appendChild(div);
+          });
+        }
+
+        if (others.length) {
+          commentsDiv.innerHTML += "<h4>Other comments</h4>";
+          others.forEach(c => {
+            const div = document.createElement("div");
+            div.className = "comment-block";
+            div.textContent = c;
+            commentsDiv.appendChild(div);
+          });
+        }
+      }
+
+      document.getElementById("ai-summary-text").textContent = "";
+
+      // Charts
+      drawCharts(catScores, data.questionAverages);
+    }
+
+    function buildSummaryText(detail, catScores) {
+      if (detail.responseCount === 0) {
+        return "No feedback submitted yet for this team leader.";
+      }
+
+      const parts = [];
+      const r = detail.responseCount;
+      const overall = detail.avgOverall ? detail.avgOverall.toFixed(2) : "-";
+      parts.push(`Based on ${r} anonymous responses, the overall average score is ${overall} out of 5.`);
+
+      const entries = Object.entries(catScores).filter(([_, v]) => v != null);
+      if (!entries.length) return parts.join(" ");
+
+      entries.sort((a, b) => b[1] - a[1]);
+      const strongest = entries[0];
+      const weakest = entries[entries.length - 1];
+
+      if (strongest[1] >= 3.75) {
+        parts.push(`${strongest[0]} is a clear strength.`);
+      }
+      if (weakest[1] < 3.5 && weakest[0] !== strongest[0]) {
+        parts.push(`${weakest[0]} shows the greatest opportunity for development.`);
+      }
+
+      return parts.join(" ");
+    }
+
+    function drawCharts(catScores, questionAverages) {
+      const radarCtx = document.getElementById("radarChart").getContext("2d");
+      const barCtx = document.getElementById("barChart").getContext("2d");
+
+      const catLabels = Object.keys(catScores);
+      const catValues = catLabels.map(k => catScores[k] || 0);
+
+      if (radarChart) radarChart.destroy();
+      radarChart = new Chart(radarCtx, {
+        type: "radar",
+        data: {
+          labels: catLabels,
+          datasets: [{
+            label: "Category average",
+            data: catValues
+          }]
+        },
+        options: {
+          scales: {
+            r: {
+              suggestedMin: 1,
+              suggestedMax: 5
+            }
+          }
+        }
+      });
+
+      const qLabels = Object.keys(questionAverages).sort();
+      const qValues = qLabels.map(k => questionAverages[k] || 0);
+
+      if (barChart) barChart.destroy();
+      barChart = new Chart(barCtx, {
+        type: "bar",
+        data: {
+          labels: qLabels,
+          datasets: [{
+            label: "Question avg",
+            data: qValues
+          }]
+        },
+        options: {
+          scales: {
+            y: {
+              suggestedMin: 1,
+              suggestedMax: 5
+            }
+          }
+        }
+      });
+    }
+
+    // AI SUMMARY
+    async function generateAiSummary() {
+      const el = document.getElementById("ai-summary-text");
+      if (!currentCampaignId || !currentTLId) {
+        el.textContent = "Select a team leader first.";
+        return;
+      }
+
+      el.textContent = "Generating AI summary...";
+
+      const res = await fetch(
+        API_BASE + `/api/admin/ai-summary?campaignId=${encodeURIComponent(currentCampaignId)}&teamLeaderId=${encodeURIComponent(currentTLId)}`,
+        { headers: authHeaders() }
+      );
+      const data = await res.json();
+
+      if (!res.ok) {
+        el.textContent = data.error || "Error generating AI summary.";
+        return;
+      }
+
+      el.textContent = data.summary;
+    }
+
+    document.getElementById("ai-summary-btn").addEventListener("click", generateAiSummary);
+
+    // DELETE RESPONSES
+    async function deleteResponses() {
+      if (!currentCampaignId || !currentTLId) return;
+      const confirmDelete = confirm(
+        `Delete ALL responses for ${currentTLId} in cycle ${currentCampaignId}? This cannot be undone.`
+      );
+      if (!confirmDelete) return;
+
+      const res = await fetch(API_BASE + "/api/admin/delete-feedback", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...authHeaders()
+        },
+        body: JSON.stringify({
+          campaignId: currentCampaignId,
+          teamLeaderId: currentTLId
+        })
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.error || "Error deleting feedback.");
+        return;
+      }
+
+      alert(`Deleted ${data.deletedRows || 0} responses.`);
+      await loadOverview();
+      document.getElementById("detail-block").style.display = "none";
+      document.getElementById("detail-intro").style.display = "block";
+    }
+
+    document.getElementById("delete-responses-btn").addEventListener("click", deleteResponses);
+
+    // ---- NEW: TEAM LEADER MANAGEMENT ----
+    async function loadTeamLeaders() {
+      const msg = document.getElementById("tl-msg");
+      msg.textContent = "";
+      try {
+        const res = await fetch(API_BASE + "/api/admin/team-leaders", {
+          headers: authHeaders()
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          msg.textContent = data.error || "Error loading team leaders.";
+          teamLeaders = [];
+        } else {
+          teamLeaders = data.teamLeaders || [];
+        }
+      } catch (e) {
+        console.error(e);
+        msg.textContent = "Error contacting server for team leader list.";
+        teamLeaders = [];
+      }
+      renderTeamLeaders();
+    }
+
+    function renderTeamLeaders() {
+      const list = document.getElementById("tl-list");
+      list.innerHTML = "";
+
+      if (!teamLeaders.length) {
+        list.innerHTML = '<p class="muted">No team leaders yet – add one below.</p>';
+      } else {
+        teamLeaders.forEach(name => {
+          const span = document.createElement("span");
+          span.className = "pill tl-pill";
+          span.textContent = name;
+
+          const btn = document.createElement("button");
+          btn.textContent = "×";
+          btn.title = "Hide from dropdowns (feedback kept)";
+          btn.addEventListener("click", () => deactivateTL(name));
+
+          span.appendChild(btn);
+          list.appendChild(span);
+        });
+      }
+
+      // update dropdown for code generation
+      const sel = document.getElementById("gen-tl-select");
+      if (sel) {
+        sel.innerHTML = "";
+        teamLeaders.forEach(name => {
+          const opt = document.createElement("option");
+          opt.value = name;
+          opt.textContent = name;
+          sel.appendChild(opt);
+        });
+      }
+    }
+
+    async function addTL() {
+      const input = document.getElementById("tl-new-name");
+      const msg = document.getElementById("tl-msg");
+      msg.textContent = "";
+      const name = input.value.trim();
+      if (!name) {
+        msg.textContent = "Enter a name to add.";
+        return;
+      }
+
+      try {
+        const res = await fetch(API_BASE + "/api/admin/team-leaders", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...authHeaders()
+          },
+          body: JSON.stringify({ name })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          msg.textContent = data.error || "Error saving team leader.";
+          return;
+        }
+        input.value = "";
+        msg.textContent = "Saved.";
+        await loadTeamLeaders();
+      } catch (e) {
+        console.error(e);
+        msg.textContent = "Error contacting server.";
+      }
+    }
+
+    async function deactivateTL(name) {
+      const msg = document.getElementById("tl-msg");
+      if (!confirm(`Hide ${name} from dropdowns? Existing feedback is kept.`)) return;
+
+      try {
+        const res = await fetch(API_BASE + "/api/admin/team-leaders", {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+            ...authHeaders()
+          },
+          body: JSON.stringify({ name })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          alert(data.error || "Error updating team leader.");
+          return;
+        }
+        await loadTeamLeaders();
+      } catch (e) {
+        console.error(e);
+        alert("Error contacting server.");
+      }
+    }
+
+    document.getElementById("tl-add-btn").addEventListener("click", addTL);
+
+    // GENERATE CODES (uses TL dropdown now)
+    async function generateCodes() {
+      const campaignId = document.getElementById("gen-campaign").value.trim();
+      const tlSelect = document.getElementById("gen-tl-select");
+      const teamLeaderId = tlSelect.value;
+      const count = Number(document.getElementById("gen-count").value);
+      const out = document.getElementById("gen-output");
+      out.textContent = "";
+
+      if (!campaignId || !teamLeaderId || !count) {
+        out.textContent = "Please fill all fields.";
+        return;
+      }
+
+      const res = await fetch(API_BASE + "/api/admin/generate-codes", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...authHeaders()
+        },
+        body: JSON.stringify({ campaignId, teamLeaderId, count })
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        out.textContent = data.error || "Error generating codes.";
+        return;
+      }
+
+      out.textContent = data.codes.join("\n");
+    }
+
+    document.getElementById("gen-btn").addEventListener("click", generateCodes);
+
+    // PDF EXPORT
+    async function exportPdf() {
+      if (!lastDetailData || !currentTLId || !currentCampaignId) return;
+
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+
+      const title = `360° Feedback – ${currentTLId}`;
+      doc.setFontSize(16);
+      doc.text(title, 10, 15);
+
+      doc.setFontSize(11);
+      doc.text(`Cycle: ${currentCampaignId}`, 10, 25);
+      doc.text(`Responses: ${lastDetailData.responseCount}`, 10, 31);
+      doc.text(`Overall average: ${lastDetailData.avgOverall ? lastDetailData.avgOverall.toFixed(2) : "-"}`, 10, 37);
+
+      // Summary
+      const summary = document.getElementById("detail-summary-text").textContent || "";
+      doc.text("Summary:", 10, 47);
+      doc.setFontSize(10);
+      doc.text(doc.splitTextToSize(summary, 180), 10, 53);
+
+      // AI summary if present
+      const aiSummary = document.getElementById("ai-summary-text").textContent || "";
+      if (aiSummary) {
+        let y = 80;
+        doc.setFontSize(11);
+        doc.text("AI themes from comments:", 10, y);
+        doc.setFontSize(10);
+        doc.text(doc.splitTextToSize(aiSummary, 180), 10, y + 6);
+      }
+
+      doc.save(`TL360-${currentCampaignId}-${currentTLId}.pdf`);
+    }
+
+    document.getElementById("pdf-btn").addEventListener("click", exportPdf);
+  </script>
+</body>
+</html>

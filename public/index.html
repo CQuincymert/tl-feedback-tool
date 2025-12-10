@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Team Leader 360° Feedback</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <style>
+    :root {
+      --bg: #f4f4f5;
+      --card-bg: #ffffff;
+      --accent: #2563eb;
+      --accent-soft: #dbeafe;
+      --border: #e4e4e7;
+      --text-main: #111827;
+      --text-muted: #6b7280;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top left, #e0f2fe, #f5f5f5 40%);
+      color: var(--text-main);
+    }
+
+    .page {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 2.5rem 1.25rem 3rem;
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      margin: 0 0 0.3rem;
+    }
+
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      margin-bottom: 1.2rem;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: 16px;
+      padding: 1.6rem 1.8rem;
+      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.10);
+      border: 1px solid rgba(148, 163, 184, 0.15);
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      padding: 0.1rem 0.7rem;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      background: #ecfeff;
+      color: #0369a1;
+    }
+
+    .badge-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: #38bdf8;
+    }
+
+    .progress-wrapper {
+      margin: 1rem 0 1.3rem;
+    }
+
+    .progress-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-bottom: 0.2rem;
+    }
+
+    .progress-bar {
+      height: 7px;
+      border-radius: 999px;
+      background: #e5e7eb;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0;
+      background: linear-gradient(90deg, #2563eb, #22c55e);
+      transition: width 0.25s ease-out;
+    }
+
+    .section-title {
+      margin-top: 1rem;
+      font-size: 1.05rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .section-hint {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    .group-heading {
+      margin-top: 0.9rem;
+      font-size: 0.96rem;
+      font-weight: 600;
+    }
+
+    .group-hint {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-bottom: 0.25rem;
+    }
+
+    .field-row {
+      margin: 0.75rem 0;
+    }
+
+    label {
+      font-size: 0.9rem;
+      font-weight: 500;
+      display: block;
+      margin-bottom: 0.15rem;
+    }
+
+    input[type="text"],
+    textarea {
+      width: 100%;
+      padding: 0.45rem 0.55rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      font-size: 0.9rem;
+      font-family: inherit;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 70px;
+    }
+
+    input:focus,
+    textarea:focus {
+      outline: 2px solid var(--accent-soft);
+      border-color: var(--accent);
+    }
+
+    .btn-row {
+      margin-top: 1.4rem;
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    button {
+      border-radius: 999px;
+      border: none;
+      padding: 0.45rem 1.1rem;
+      font-size: 0.9rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-weight: 500;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #1d4ed8;
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--accent);
+    }
+
+    .btn-ghost:hover {
+      background: var(--accent-soft);
+    }
+
+    .pill-scale {
+      display: grid;
+      grid-template-columns: 1.1fr repeat(5, minmax(0, 1fr));
+      gap: 0.2rem;
+      align-items: stretch;
+      font-size: 0.8rem;
+      margin-bottom: 0.2rem;
+    }
+
+    .pill-scale-label {
+      font-weight: 500;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .pill-option {
+      border-radius: 999px;
+      border: 1px solid #e5e7eb;
+      text-align: center;
+      padding: 0.2rem 0.3rem;
+      cursor: pointer;
+      user-select: none;
+      background: #f9fafb;
+    }
+
+    .pill-option span {
+      display: block;
+    }
+
+    .pill-option small {
+      display: block;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+    }
+
+    .pill-option.selected {
+      background: var(--accent);
+      color: white;
+      border-color: var(--accent);
+    }
+
+    .question-block {
+      border-radius: 10px;
+      padding: 0.55rem 0.75rem;
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      margin-bottom: 0.5rem;
+      background: #f9fafb;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .question-block.missing {
+      border-color: #f97316;
+      box-shadow: 0 0 0 1px #fed7aa;
+    }
+
+textarea.missing {
+  border-color: #f97316;
+  box-shadow: 0 0 0 1px #fed7aa;
+}
+
+    .question-text {
+      font-size: 0.9rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .error {
+      color: #b91c1c;
+      font-size: 0.8rem;
+      margin-top: 0.4rem;
+    }
+
+    .success {
+      color: #15803d;
+      font-size: 0.9rem;
+      margin-top: 0.3rem;
+    }
+
+    .hidden { display: none; }
+
+    @media (max-width: 720px) {
+      .pill-scale {
+        grid-template-columns: 1fr 1fr 1fr;
+        row-gap: 0.3rem;
+      }
+      .pill-scale-label {
+        grid-column: 1 / -1;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="card">
+      <div class="badge">
+        <span class="badge-dot"></span>
+        Anonymous 360° feedback
+      </div>
+
+      <h1>Team Leader Feedback</h1>
+      <p class="subtitle">
+        Your feedback is anonymous. Please focus on observable behaviours and your
+        experience over the past review period.
+      </p>
+
+      <!-- Progress -->
+      <div class="progress-wrapper">
+        <div class="progress-label">
+          <span id="progress-label">Step 1 of 2 · Enter your feedback code</span>
+          <span id="progress-percent">0%</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" id="progress-fill"></div>
+        </div>
+      </div>
+
+      <!-- STEP 1: Enter code -->
+      <div id="step-code">
+        <div class="section-title">Step 1 · Enter your code</div>
+        <p class="section-hint" id="cycle-hint">
+          Use the one-time feedback code provided to you. This links your feedback to the
+          correct team leader without revealing who you are.
+        </p>
+
+        <div class="field-row">
+          <label for="code-input">Feedback code</label>
+          <input id="code-input" type="text" placeholder="e.g. KJ9Z-7PLT" autocomplete="off">
+        </div>
+
+        <p class="section-hint">
+          When you click “Start feedback”, we will verify the code and then move to the
+          questions. Your team leader will never see your identity.
+        </p>
+
+        <div id="code-error" class="error"></div>
+
+        <div class="btn-row">
+          <button class="btn-primary" id="start-btn">
+            Start feedback
+          </button>
+        </div>
+      </div>
+
+      <!-- STEP 2: Questionnaire -->
+      <div id="step-questions" class="hidden">
+        <div class="section-title" style="margin-top:0.4rem;">
+          Step 2 · Rate behaviours
+        </div>
+        <p class="section-hint">
+          For each statement, choose how often it is true. All rating questions are required.
+        </p>
+
+        <!-- Likert key -->
+        <div class="pill-scale" style="margin-bottom:0.6rem;">
+          <div class="pill-scale-label">Scale:</div>
+          <div class="pill-option" data-static>
+            <span>Never</span><small>1</small>
+          </div>
+          <div class="pill-option" data-static>
+            <span>Rarely</span><small>2</small>
+          </div>
+          <div class="pill-option" data-static>
+            <span>Sometimes</span><small>3</small>
+          </div>
+          <div class="pill-option" data-static>
+            <span>Often</span><small>4</small>
+          </div>
+          <div class="pill-option" data-static>
+            <span>Always</span><small>5</small>
+          </div>
+        </div>
+
+        <div id="questions-container"></div>
+
+        <div class="section-title">Open comments</div>
+        <p class="section-hint">
+          Please avoid names or very specific situations that could identify you or
+          others. Focus on themes and behaviours.
+        </p>
+
+        <div class="field-row">
+  <label for="strengths">What are this team leader’s greatest strengths?</label>
+  <textarea id="strengths" placeholder="Please share the key strengths you’ve noticed."></textarea>
+</div>
+
+<div class="field-row">
+  <label for="development">What could this team leader improve or develop further?</label>
+  <textarea id="development" placeholder="Please describe any development or improvement areas."></textarea>
+</div>
+
+<div class="field-row">
+  <label for="other">Anything else that would help this leader succeed?</label>
+  <textarea id="other" placeholder="Add any other comments that could help this leader succeed."></textarea>
+</div>
+
+
+        <div id="submit-error" class="error"></div>
+        <div id="submit-success" class="success"></div>
+
+        <div class="btn-row">
+          <button class="btn-ghost" id="back-btn">Back</button>
+          <button class="btn-primary" id="submit-btn">
+            Submit feedback
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = "";
+    let CAMPAIGN_ID = null;
+
+    // Grouped questions with headings
+    const QUESTION_GROUPS = [
+      {
+        title: "Leadership & Management",
+        hint: "",
+        items: [
+          { id: "q2",  text: "The team leader sets clear expectations and goals." },
+          { id: "q3",  text: "The team leader makes fair, well-informed decisions." },
+          { id: "q4",  text: "The team leader remains composed and professional under pressure." }
+        ]
+      },
+      {
+        title: "Communication",
+        hint: "",
+        items: [
+          { id: "q5",  text: "The team leader communicates openly and transparently." },
+          { id: "q6",  text: "The team leader listens actively and considers feedback." },
+          { id: "q7",  text: "The team leader provides timely and useful updates." }
+        ]
+      },
+      {
+        title: "Team Support & Development",
+        hint: "",
+        items: [
+          { id: "q8",  text: "The team leader supports professional growth and development." },
+          { id: "q9",  text: "The team leader provides constructive, actionable feedback." },
+          { id: "q10", text: "The team leader acknowledges and recognises good performance." }
+        ]
+      },
+      {
+        title: "Collaboration & Culture",
+        hint: "",
+        items: [
+          { id: "q11", text: "The team leader promotes a positive and respectful team culture." },
+          { id: "q12", text: "The team leader encourages collaboration and teamwork." },
+          { id: "q13", text: "The team leader manages conflicts effectively and professionally." }
+        ]
+      },
+      {
+        title: "Execution & Accountability",
+        hint: "",
+        items: [
+          { id: "q14", text: "The team leader ensures tasks and commitments are completed on time." },
+          { id: "q15", text: "The team leader holds themselves and others accountable." },
+          { id: "q16", text: "The team leader effectively prioritises and delegates tasks." }
+        ]
+      }
+    ];
+
+    const TOTAL_QUESTIONS = QUESTION_GROUPS.reduce(
+      (sum, g) => sum + g.items.length,
+      0
+    );
+
+    let currentStep = 1;
+    let sessionId = null;
+    const answers = {}; // id -> 1–5
+
+    const stepCodeEl = document.getElementById("step-code");
+    const stepQuestionsEl = document.getElementById("step-questions");
+    const progressFillEl = document.getElementById("progress-fill");
+    const progressLabelEl = document.getElementById("progress-label");
+    const progressPercentEl = document.getElementById("progress-percent");
+
+    function setStep(step) {
+      currentStep = step;
+      if (step === 1) {
+        stepCodeEl.classList.remove("hidden");
+        stepQuestionsEl.classList.add("hidden");
+        progressFillEl.style.width = "0%";
+        progressLabelEl.textContent = "Step 1 of 2 · Enter your feedback code";
+        progressPercentEl.textContent = "0%";
+      } else {
+        stepCodeEl.classList.add("hidden");
+        stepQuestionsEl.classList.remove("hidden");
+        const completion = Math.round((Object.keys(answers).length / TOTAL_QUESTIONS) * 100);
+        const pct = Math.max(40, Math.min(95, completion));
+        progressFillEl.style.width = pct + "%";
+        progressLabelEl.textContent = "Step 2 of 2 · Provide your feedback";
+        progressPercentEl.textContent = completion + "%";
+      }
+    }
+
+    function updateQuestionProgress() {
+      if (currentStep !== 2) return;
+      const completion = Math.round((Object.keys(answers).length / TOTAL_QUESTIONS) * 100);
+      const pct = Math.max(40, Math.min(95, completion));
+      progressFillEl.style.width = pct + "%";
+      progressPercentEl.textContent = completion + "%";
+    }
+
+    function buildQuestionsUI() {
+      const container = document.getElementById("questions-container");
+      container.innerHTML = "";
+
+      QUESTION_GROUPS.forEach(group => {
+        const groupTitle = document.createElement("div");
+        groupTitle.className = "group-heading";
+        groupTitle.textContent = group.title;
+        container.appendChild(groupTitle);
+
+        if (group.hint) {
+          const gh = document.createElement("div");
+          gh.className = "group-hint";
+          gh.textContent = group.hint;
+          container.appendChild(gh);
+        }
+
+        group.items.forEach(q => {
+          const block = document.createElement("div");
+          block.className = "question-block";
+          block.dataset.questionId = q.id;
+
+          const p = document.createElement("p");
+          p.className = "question-text";
+          p.textContent = q.text;
+          block.appendChild(p);
+
+          const scale = document.createElement("div");
+          scale.className = "pill-scale";
+          scale.dataset.questionId = q.id;
+
+          const label = document.createElement("div");
+          label.className = "pill-scale-label";
+          label.textContent = "Your rating:";
+          scale.appendChild(label);
+
+          const options = [
+            { label: "Never", value: 1 },
+            { label: "Rarely", value: 2 },
+            { label: "Sometimes", value: 3 },
+            { label: "Often", value: 4 },
+            { label: "Always", value: 5 }
+          ];
+
+          options.forEach(opt => {
+            const div = document.createElement("div");
+            div.className = "pill-option";
+            div.innerHTML = `<span>${opt.label}</span><small>${opt.value}</small>`;
+            div.dataset.value = String(opt.value);
+            div.addEventListener("click", () => {
+              answers[q.id] = opt.value;
+              // deselect siblings
+              scale.querySelectorAll(".pill-option").forEach(el => {
+                el.classList.toggle("selected", el === div);
+              });
+              // clear missing highlight if it was set
+              block.classList.remove("missing");
+              updateQuestionProgress();
+            });
+            scale.appendChild(div);
+          });
+
+          block.appendChild(scale);
+          container.appendChild(block);
+        });
+      });
+    }
+
+    async function loadCurrentCampaign() {
+      const errorEl = document.getElementById("code-error");
+      const cycleHintEl = document.getElementById("cycle-hint");
+      errorEl.textContent = "";
+
+      try {
+        const res = await fetch(API_BASE + "/api/current-campaign");
+        const data = await res.json();
+
+        if (!data.campaignId) {
+          errorEl.textContent = "The feedback cycle is not configured yet. Please contact your admin.";
+          document.getElementById("start-btn").disabled = true;
+          return;
+        }
+
+        CAMPAIGN_ID = data.campaignId;
+        cycleHintEl.textContent =
+          `Use the one-time feedback code provided to you for the ${CAMPAIGN_ID} review cycle. This links your feedback to the correct team leader without revealing who you are.`;
+      } catch (e) {
+        console.error(e);
+        errorEl.textContent = "Unable to load the current feedback cycle. Please try again later.";
+        document.getElementById("start-btn").disabled = true;
+      }
+    }
+
+    buildQuestionsUI();
+    setStep(1);
+    loadCurrentCampaign();
+
+    document.getElementById("start-btn").addEventListener("click", async () => {
+      const code = document.getElementById("code-input").value.trim();
+      const errorEl = document.getElementById("code-error");
+      errorEl.textContent = "";
+
+      if (!CAMPAIGN_ID) {
+        errorEl.textContent = "Feedback cycle is not configured. Please contact your admin.";
+        return;
+      }
+
+      if (!code) {
+        errorEl.textContent = "Please enter the feedback code.";
+        return;
+      }
+
+      try {
+        const res = await fetch(API_BASE + "/api/start", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code, campaignId: CAMPAIGN_ID })
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          errorEl.textContent = data.error || "Unable to start feedback with that code.";
+          return;
+        }
+
+        sessionId = data.sessionId;
+        setStep(2);
+      } catch (e) {
+        console.error(e);
+        errorEl.textContent = "There was a problem contacting the server. Please try again.";
+      }
+    });
+
+    document.getElementById("back-btn").addEventListener("click", () => {
+      setStep(1);
+    });
+
+    document.getElementById("submit-btn").addEventListener("click", async () => {
+  const errEl = document.getElementById("submit-error");
+  const successEl = document.getElementById("submit-success");
+  errEl.textContent = "";
+  successEl.textContent = "";
+
+  if (!sessionId) {
+    errEl.textContent = "Your session has expired. Please go back and re-enter your code.";
+    return;
+  }
+
+      // Clear previous missing highlights
+      document.querySelectorAll(".question-block").forEach(block => {
+        block.classList.remove("missing");
+      });
+
+      const answeredCount = Object.keys(answers).length;
+      if (answeredCount !== TOTAL_QUESTIONS) {
+        errEl.textContent = "Please answer all rating questions before submitting.";
+
+        // Highlight missing questions
+        document.querySelectorAll(".question-block").forEach(block => {
+          const qid = block.dataset.questionId;
+          if (!answers[qid]) {
+            block.classList.add("missing");
+          }
+        });
+
+        return;
+      }
+
+      const strengths = document.getElementById("strengths").value.trim();
+      const development = document.getElementById("development").value.trim();
+      const other = document.getElementById("other").value.trim();
+
+      try {
+        const res = await fetch(API_BASE + "/api/submit", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            sessionId,
+            scores: answers,
+            comments: { strengths, development, other }
+          })
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          errEl.textContent = data.error || "There was a problem submitting your feedback.";
+          return;
+        }
+
+        successEl.textContent = "Thank you – your feedback has been submitted.";
+        document.getElementById("submit-btn").disabled = true;
+        document.getElementById("submit-btn").textContent = "Submitted";
+        progressFillEl.style.width = "100%";
+        progressPercentEl.textContent = "100%";
+      } catch (e) {
+        console.error(e);
+        errEl.textContent = "There was a problem contacting the server. Please try again.";
+      }
+    });
+  </script>
+</body>
+</html>
