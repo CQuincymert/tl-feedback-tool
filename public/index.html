@@ -1,696 +1,471 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <title>Team Leader 360° Feedback</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>360° Feedback</title>
   <style>
-    :root {
-      --bg: #f4f4f5;
-      --card-bg: #ffffff;
-      --accent: #2563eb;
-      --accent-soft: #dbeafe;
-      --border: #e4e4e7;
-      --text-main: #111827;
-      --text-muted: #6b7280;
-    }
-
-    * { box-sizing: border-box; }
-
     body {
+      font-family: system-ui, -apple-system, Segoe UI, sans-serif;
+      background: #f4f4f5;
       margin: 0;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: radial-gradient(circle at top left, #e0f2fe, #f5f5f5 40%);
-      color: var(--text-main);
+      padding: 2rem 1rem;
+      color: #0f172a;
     }
-
-    .page {
+    .shell {
       max-width: 900px;
       margin: 0 auto;
-      padding: 2.5rem 1.25rem 3rem;
+      background: #fff;
+      border-radius: 14px;
+      padding: 1.8rem 2.2rem;
+      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
     }
-
-    h1 {
-      font-size: 1.8rem;
-      margin: 0 0 0.3rem;
-    }
-
-    .subtitle {
-      color: var(--text-muted);
-      font-size: 0.95rem;
-      margin-bottom: 1.2rem;
-    }
-
+    h1 { margin: 0 0 0.5rem 0; }
+    h2 { margin-top: 1.4rem; }
+    .muted { color:#64748b; font-size:0.95rem; }
     .card {
-      background: var(--card-bg);
-      border-radius: 16px;
-      padding: 1.6rem 1.8rem;
-      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.10);
-      border: 1px solid rgba(148, 163, 184, 0.15);
+      border:1px solid #e5e7eb;
+      border-radius:12px;
+      padding:1rem 1.1rem;
+      background:#f9fafb;
+      margin-top: 1rem;
     }
-
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.3rem;
-      padding: 0.1rem 0.7rem;
-      border-radius: 999px;
-      font-size: 0.78rem;
-      background: #ecfeff;
-      color: #0369a1;
+    .row { display:flex; gap:0.8rem; flex-wrap:wrap; align-items:center; }
+    input[type="text"], textarea {
+      width: 100%;
+      padding: 0.55rem 0.65rem;
+      border-radius: 10px;
+      border: 1px solid #d4d4d8;
+      font-size: 1rem;
+      background: #fff;
+      box-sizing: border-box;
     }
-
-    .badge-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 999px;
-      background: #38bdf8;
+    textarea { min-height: 90px; resize: vertical; }
+    button {
+      padding: 0.55rem 0.9rem;
+      border-radius: 10px;
+      border: none;
+      background: #2563eb;
+      color: #fff;
+      font-size: 1rem;
+      cursor: pointer;
     }
-
-    .progress-wrapper {
-      margin: 1rem 0 1.3rem;
+    button.secondary { background:#e5e7eb; color:#111827; }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+    .err {
+      margin-top: 0.6rem;
+      color:#b91c1c;
+      background:#fef2f2;
+      border:1px solid #fecaca;
+      padding:0.7rem 0.8rem;
+      border-radius: 10px;
+      display:none;
     }
-
-    .progress-label {
-      display: flex;
-      justify-content: space-between;
-      font-size: 0.8rem;
-      color: var(--text-muted);
-      margin-bottom: 0.2rem;
-    }
-
-    .progress-bar {
-      height: 7px;
-      border-radius: 999px;
-      background: #e5e7eb;
-      overflow: hidden;
-    }
-
-    .progress-fill {
-      height: 100%;
-      width: 0;
-      background: linear-gradient(90deg, #2563eb, #22c55e);
-      transition: width 0.25s ease-out;
+    .ok {
+      margin-top: 0.6rem;
+      color:#065f46;
+      background:#ecfdf5;
+      border:1px solid #a7f3d0;
+      padding:0.7rem 0.8rem;
+      border-radius: 10px;
+      display:none;
     }
 
     .section-title {
-      margin-top: 1rem;
+      margin: 1.2rem 0 0.4rem 0;
+      font-weight: 700;
       font-size: 1.05rem;
-      font-weight: 600;
-      display: flex;
-      align-items: center;
-      gap: 0.4rem;
+      color:#0f172a;
     }
 
-    .section-hint {
-      font-size: 0.82rem;
-      color: var(--text-muted);
-      margin-bottom: 0.5rem;
-    }
-
-    .group-heading {
-      margin-top: 0.9rem;
-      font-size: 0.96rem;
-      font-weight: 600;
-    }
-
-    .group-hint {
-      font-size: 0.8rem;
-      color: var(--text-muted);
-      margin-bottom: 0.25rem;
-    }
-
-    .field-row {
-      margin: 0.75rem 0;
-    }
-
-    label {
-      font-size: 0.9rem;
-      font-weight: 500;
-      display: block;
-      margin-bottom: 0.15rem;
-    }
-
-    input[type="text"],
-    textarea {
-      width: 100%;
-      padding: 0.45rem 0.55rem;
-      border-radius: 8px;
-      border: 1px solid var(--border);
-      font-size: 0.9rem;
-      font-family: inherit;
-    }
-
-    textarea {
-      resize: vertical;
-      min-height: 70px;
-    }
-
-    input:focus,
-    textarea:focus {
-      outline: 2px solid var(--accent-soft);
-      border-color: var(--accent);
-    }
-
-    .btn-row {
-      margin-top: 1.4rem;
-      display: flex;
-      justify-content: flex-end;
-      gap: 0.75rem;
-      flex-wrap: wrap;
-    }
-
-    button {
-      border-radius: 999px;
-      border: none;
-      padding: 0.45rem 1.1rem;
-      font-size: 0.9rem;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.4rem;
-      font-weight: 500;
-    }
-
-    .btn-primary {
-      background: var(--accent);
-      color: white;
-    }
-
-    .btn-primary:hover {
-      background: #1d4ed8;
-    }
-
-    .btn-ghost {
-      background: transparent;
-      color: var(--accent);
-    }
-
-    .btn-ghost:hover {
-      background: var(--accent-soft);
-    }
-
-    .pill-scale {
-      display: grid;
-      grid-template-columns: 1.1fr repeat(5, minmax(0, 1fr));
-      gap: 0.2rem;
-      align-items: stretch;
-      font-size: 0.8rem;
-      margin-bottom: 0.2rem;
-    }
-
-    .pill-scale-label {
-      font-weight: 500;
-      font-size: 0.75rem;
-      color: var(--text-muted);
-    }
-
-    .pill-option {
-      border-radius: 999px;
+    .q {
       border: 1px solid #e5e7eb;
-      text-align: center;
-      padding: 0.2rem 0.3rem;
-      cursor: pointer;
-      user-select: none;
-      background: #f9fafb;
+      border-radius: 12px;
+      padding: 0.9rem 1rem;
+      margin-top: 0.8rem;
+      background:#fff;
     }
-
-    .pill-option span {
-      display: block;
+    .q label.title {
+      display:block;
+      font-weight: 600;
+      margin-bottom: 0.65rem;
     }
-
-    .pill-option small {
-      display: block;
-      font-size: 0.7rem;
-      color: var(--text-muted);
+    .radios {
+      display:flex;
+      gap: 0.8rem;
+      flex-wrap:wrap;
     }
-
-    .pill-option.selected {
-      background: var(--accent);
-      color: white;
-      border-color: var(--accent);
+    .radios label {
+      display:flex;
+      align-items:center;
+      gap:0.35rem;
+      border:1px solid #e5e7eb;
+      border-radius: 999px;
+      padding:0.35rem 0.6rem;
+      background:#f9fafb;
+      cursor:pointer;
     }
-
-    .question-block {
-      border-radius: 10px;
-      padding: 0.55rem 0.75rem;
-      border: 1px solid rgba(148, 163, 184, 0.25);
-      margin-bottom: 0.5rem;
-      background: #f9fafb;
-      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    .footer-actions {
+      margin-top: 1.4rem;
+      display:flex;
+      gap:0.7rem;
+      align-items:center;
+      flex-wrap:wrap;
     }
-
-    .question-block.missing {
-      border-color: #f97316;
-      box-shadow: 0 0 0 1px #fed7aa;
-    }
-
-textarea.missing {
-  border-color: #f97316;
-  box-shadow: 0 0 0 1px #fed7aa;
-}
-
-    .question-text {
-      font-size: 0.9rem;
-      margin-bottom: 0.25rem;
-    }
-
-    .error {
-      color: #b91c1c;
-      font-size: 0.8rem;
-      margin-top: 0.4rem;
-    }
-
-    .success {
-      color: #15803d;
-      font-size: 0.9rem;
-      margin-top: 0.3rem;
-    }
-
-    .hidden { display: none; }
-
-    @media (max-width: 720px) {
-      .pill-scale {
-        grid-template-columns: 1fr 1fr 1fr;
-        row-gap: 0.3rem;
-      }
-      .pill-scale-label {
-        grid-column: 1 / -1;
-      }
-    }
+    .tiny { font-size:0.88rem; color:#64748b; }
   </style>
 </head>
 <body>
-  <div class="page">
-    <div class="card">
-      <div class="badge">
-        <span class="badge-dot"></span>
-        Anonymous 360° feedback
-      </div>
+  <div class="shell">
+    <h1>360° Team Leader Feedback</h1>
+    <p class="muted">
+      This feedback is anonymous. Your responses will be combined into a summary report.
+      Please focus on observable behaviours and keep comments constructive.
+    </p>
 
-      <h1>Team Leader Feedback</h1>
-      <p class="subtitle">
-        Your feedback is anonymous. Please focus on observable behaviours and your
-        experience over the past review period.
+    <!-- STEP 1: ENTER CODE -->
+    <div id="step1" class="card">
+      <h2 style="margin:0 0 0.4rem 0;">Enter your feedback code</h2>
+      <p class="muted" style="margin:0 0 0.8rem 0;">
+        Enter the one-time code you were given to start the questionnaire.
       </p>
 
-      <!-- Progress -->
-      <div class="progress-wrapper">
-        <div class="progress-label">
-          <span id="progress-label">Step 1 of 2 · Enter your feedback code</span>
-          <span id="progress-percent">0%</span>
+      <div class="row">
+        <div style="flex:1; min-width: 240px;">
+          <input type="text" id="codeInput" placeholder="e.g. ABCD-1234" autocomplete="off" />
         </div>
-        <div class="progress-bar">
-          <div class="progress-fill" id="progress-fill"></div>
-        </div>
+        <button id="startBtn">Start</button>
       </div>
 
-      <!-- STEP 1: Enter code -->
-      <div id="step-code">
-        <div class="section-title">Step 1 · Enter your code</div>
-        <p class="section-hint" id="cycle-hint">
-          Use the one-time feedback code provided to you. This links your feedback to the
-          correct team leader without revealing who you are.
-        </p>
-
-        <div class="field-row">
-          <label for="code-input">Feedback code</label>
-          <input id="code-input" type="text" placeholder="e.g. KJ9Z-7PLT" autocomplete="off">
-        </div>
-
-        <p class="section-hint">
-          When you click “Start feedback”, we will verify the code and then move to the
-          questions. Your team leader will never see your identity.
-        </p>
-
-        <div id="code-error" class="error"></div>
-
-        <div class="btn-row">
-          <button class="btn-primary" id="start-btn">
-            Start feedback
-          </button>
-        </div>
-      </div>
-
-      <!-- STEP 2: Questionnaire -->
-      <div id="step-questions" class="hidden">
-        <div class="section-title" style="margin-top:0.4rem;">
-          Step 2 · Rate behaviours
-        </div>
-        <p class="section-hint">
-          For each statement, choose how often it is true. All rating questions are required.
-        </p>
-
-        <!-- Likert key -->
-        <div class="pill-scale" style="margin-bottom:0.6rem;">
-          <div class="pill-scale-label">Scale:</div>
-          <div class="pill-option" data-static>
-            <span>Never</span><small>1</small>
-          </div>
-          <div class="pill-option" data-static>
-            <span>Rarely</span><small>2</small>
-          </div>
-          <div class="pill-option" data-static>
-            <span>Sometimes</span><small>3</small>
-          </div>
-          <div class="pill-option" data-static>
-            <span>Often</span><small>4</small>
-          </div>
-          <div class="pill-option" data-static>
-            <span>Always</span><small>5</small>
-          </div>
-        </div>
-
-        <div id="questions-container"></div>
-
-        <div class="section-title">Open comments</div>
-        <p class="section-hint">
-          Please avoid names or very specific situations that could identify you or
-          others. Focus on themes and behaviours.
-        </p>
-
-        <div class="field-row">
-  <label for="strengths">What are this team leader’s greatest strengths?</label>
-  <textarea id="strengths" placeholder="Please share the key strengths you’ve noticed."></textarea>
-</div>
-
-<div class="field-row">
-  <label for="development">What could this team leader improve or develop further?</label>
-  <textarea id="development" placeholder="Please describe any development or improvement areas."></textarea>
-</div>
-
-<div class="field-row">
-  <label for="other">Anything else that would help this leader succeed?</label>
-  <textarea id="other" placeholder="Add any other comments that could help this leader succeed."></textarea>
-</div>
-
-
-        <div id="submit-error" class="error"></div>
-        <div id="submit-success" class="success"></div>
-
-        <div class="btn-row">
-          <button class="btn-ghost" id="back-btn">Back</button>
-          <button class="btn-primary" id="submit-btn">
-            Submit feedback
-          </button>
-        </div>
-      </div>
+      <div id="step1Err" class="err"></div>
+      <div id="step1Ok" class="ok"></div>
+      <p class="tiny" style="margin-top:0.8rem;">
+        Tip: once you submit, this code cannot be reused.
+      </p>
     </div>
+
+    <!-- STEP 2: QUESTIONS -->
+    <form id="step2" class="card" style="display:none;">
+      <h2 style="margin:0 0 0.4rem 0;">Questionnaire</h2>
+      <p class="muted" style="margin:0 0 0.8rem 0;">
+        All questions are required.
+      </p>
+
+      <div class="section-title">Leadership and Management</div>
+      <div id="q2" class="q"></div>
+      <div id="q3" class="q"></div>
+      <div id="q4" class="q"></div>
+
+      <div class="section-title">Communication</div>
+      <div id="q5" class="q"></div>
+      <div id="q6" class="q"></div>
+      <div id="q7" class="q"></div>
+
+      <div class="section-title">Team Support and Development</div>
+      <div id="q8" class="q"></div>
+      <div id="q9" class="q"></div>
+      <div id="q10" class="q"></div>
+
+      <div class="section-title">Collaboration and Culture</div>
+      <div id="q11" class="q"></div>
+      <div id="q12" class="q"></div>
+      <div id="q13" class="q"></div>
+
+      <div class="section-title">Execution and Accountability</div>
+      <div id="q14" class="q"></div>
+      <div id="q15" class="q"></div>
+      <div id="q16" class="q"></div>
+
+      <div class="section-title">Open-ended questions</div>
+
+      <div class="q">
+        <label class="title" for="strengthsText">What are this team leader’s greatest strengths?</label>
+        <textarea id="strengthsText" required></textarea>
+      </div>
+
+      <div class="q">
+        <label class="title" for="devText">What could this team leader improve or develop further?</label>
+        <textarea id="devText" required></textarea>
+      </div>
+
+      <div class="q">
+        <label class="title" for="otherText">Is there anything else you would like to share that would help this leader succeed?</label>
+        <textarea id="otherText" required></textarea>
+      </div>
+
+      <div id="submitErr" class="err"></div>
+      <div id="submitOk" class="ok"></div>
+
+      <div class="footer-actions">
+        <button id="submitBtn" type="submit">Submit feedback</button>
+        <button id="restartBtn" type="button" class="secondary">Start over</button>
+        <span class="tiny" id="sessionNote"></span>
+      </div>
+    </form>
   </div>
 
   <script>
-    const API_BASE = "";
-    let CAMPAIGN_ID = null;
+    // IMPORTANT: if hosted on same domain, use relative paths
+    const API = ""; // keep blank to call same-origin, e.g. /api/start
 
-    // Grouped questions with headings
-    const QUESTION_GROUPS = [
-      {
-        title: "Leadership & Management",
-        hint: "",
-        items: [
-          { id: "q2",  text: "The team leader sets clear expectations and goals." },
-          { id: "q3",  text: "The team leader makes fair, well-informed decisions." },
-          { id: "q4",  text: "The team leader remains composed and professional under pressure." }
-        ]
-      },
-      {
-        title: "Communication",
-        hint: "",
-        items: [
-          { id: "q5",  text: "The team leader communicates openly and transparently." },
-          { id: "q6",  text: "The team leader listens actively and considers feedback." },
-          { id: "q7",  text: "The team leader provides timely and useful updates." }
-        ]
-      },
-      {
-        title: "Team Support & Development",
-        hint: "",
-        items: [
-          { id: "q8",  text: "The team leader supports professional growth and development." },
-          { id: "q9",  text: "The team leader provides constructive, actionable feedback." },
-          { id: "q10", text: "The team leader acknowledges and recognises good performance." }
-        ]
-      },
-      {
-        title: "Collaboration & Culture",
-        hint: "",
-        items: [
-          { id: "q11", text: "The team leader promotes a positive and respectful team culture." },
-          { id: "q12", text: "The team leader encourages collaboration and teamwork." },
-          { id: "q13", text: "The team leader manages conflicts effectively and professionally." }
-        ]
-      },
-      {
-        title: "Execution & Accountability",
-        hint: "",
-        items: [
-          { id: "q14", text: "The team leader ensures tasks and commitments are completed on time." },
-          { id: "q15", text: "The team leader holds themselves and others accountable." },
-          { id: "q16", text: "The team leader effectively prioritises and delegates tasks." }
-        ]
-      }
+    const SESSION_KEY = "tl360_session_v1";
+
+    const scale = [
+      { label: "Never", value: 1 },
+      { label: "Rarely", value: 2 },
+      { label: "Sometimes", value: 3 },
+      { label: "Often", value: 4 },
+      { label: "Always", value: 5 },
     ];
 
-    const TOTAL_QUESTIONS = QUESTION_GROUPS.reduce(
-      (sum, g) => sum + g.items.length,
-      0
-    );
+    const questions = [
+      { id: "q2", text: "The team leader sets clear expectations and goals." },
+      { id: "q3", text: "The team leader makes fair, well-informed decisions." },
+      { id: "q4", text: "The team leader remains composed and professional under pressure." },
 
-    let currentStep = 1;
-    let sessionId = null;
-    const answers = {}; // id -> 1–5
+      { id: "q5", text: "The team leader communicates openly and transparently." },
+      { id: "q6", text: "The team leader listens actively and considers feedback." },
+      { id: "q7", text: "The team leader provides timely and useful updates." },
 
-    const stepCodeEl = document.getElementById("step-code");
-    const stepQuestionsEl = document.getElementById("step-questions");
-    const progressFillEl = document.getElementById("progress-fill");
-    const progressLabelEl = document.getElementById("progress-label");
-    const progressPercentEl = document.getElementById("progress-percent");
+      { id: "q8", text: "The team leader supports professional growth and development." },
+      { id: "q9", text: "The team leader provides constructive, actionable feedback." },
+      { id: "q10", text: "The team leader acknowledges and recognizes good performance." },
 
-    function setStep(step) {
-      currentStep = step;
-      if (step === 1) {
-        stepCodeEl.classList.remove("hidden");
-        stepQuestionsEl.classList.add("hidden");
-        progressFillEl.style.width = "0%";
-        progressLabelEl.textContent = "Step 1 of 2 · Enter your feedback code";
-        progressPercentEl.textContent = "0%";
-      } else {
-        stepCodeEl.classList.add("hidden");
-        stepQuestionsEl.classList.remove("hidden");
-        const completion = Math.round((Object.keys(answers).length / TOTAL_QUESTIONS) * 100);
-        const pct = Math.max(40, Math.min(95, completion));
-        progressFillEl.style.width = pct + "%";
-        progressLabelEl.textContent = "Step 2 of 2 · Provide your feedback";
-        progressPercentEl.textContent = completion + "%";
+      { id: "q11", text: "The team leader promotes a positive and respectful team culture." },
+      { id: "q12", text: "The team leader encourages collaboration and teamwork." },
+      { id: "q13", text: "The team leader manages conflicts effectively and professionally." },
+
+      { id: "q14", text: "The team leader ensures tasks and commitments are completed on time." },
+      { id: "q15", text: "The team leader holds themselves and others accountable." },
+      { id: "q16", text: "The team leader effectively prioritizes and delegates tasks." },
+    ];
+
+    function show(el, yes) { el.style.display = yes ? "block" : "none"; }
+    function setErr(el, msg) { el.textContent = msg || ""; show(el, !!msg); }
+    function setOk(el, msg) { el.textContent = msg || ""; show(el, !!msg); }
+
+    function renderQuestion(q) {
+      const wrap = document.getElementById(q.id);
+      wrap.innerHTML = "";
+
+      const title = document.createElement("label");
+      title.className = "title";
+      title.textContent = q.text;
+
+      const radios = document.createElement("div");
+      radios.className = "radios";
+
+      for (const opt of scale) {
+        const lbl = document.createElement("label");
+
+        const input = document.createElement("input");
+        input.type = "radio";
+        input.name = q.id;
+        input.value = opt.value;
+        input.required = true;
+
+        const span = document.createElement("span");
+        span.textContent = opt.label;
+
+        lbl.appendChild(input);
+        lbl.appendChild(span);
+        radios.appendChild(lbl);
+      }
+
+      wrap.appendChild(title);
+      wrap.appendChild(radios);
+    }
+
+    questions.forEach(renderQuestion);
+
+    const step1 = document.getElementById("step1");
+    const step2 = document.getElementById("step2");
+
+    const codeInput = document.getElementById("codeInput");
+    const startBtn = document.getElementById("startBtn");
+    const step1Err = document.getElementById("step1Err");
+    const step1Ok = document.getElementById("step1Ok");
+
+    const submitErr = document.getElementById("submitErr");
+    const submitOk = document.getElementById("submitOk");
+    const submitBtn = document.getElementById("submitBtn");
+    const restartBtn = document.getElementById("restartBtn");
+    const sessionNote = document.getElementById("sessionNote");
+
+    function clearSession() {
+      localStorage.removeItem(SESSION_KEY);
+    }
+
+    function loadSession() {
+      try {
+        const raw = localStorage.getItem(SESSION_KEY);
+        if (!raw) return null;
+        const s = JSON.parse(raw);
+
+        // Soft expiry: 24 hours (prevents the “session expired” frustration)
+        const ageMs = Date.now() - (s.startedAt || 0);
+        if (ageMs > 24 * 60 * 60 * 1000) {
+          clearSession();
+          return null;
+        }
+        return s;
+      } catch {
+        clearSession();
+        return null;
       }
     }
 
-    function updateQuestionProgress() {
-      if (currentStep !== 2) return;
-      const completion = Math.round((Object.keys(answers).length / TOTAL_QUESTIONS) * 100);
-      const pct = Math.max(40, Math.min(95, completion));
-      progressFillEl.style.width = pct + "%";
-      progressPercentEl.textContent = completion + "%";
+    function saveSession(session) {
+      localStorage.setItem(SESSION_KEY, JSON.stringify(session));
     }
 
-    function buildQuestionsUI() {
-      const container = document.getElementById("questions-container");
-      container.innerHTML = "";
-
-      QUESTION_GROUPS.forEach(group => {
-        const groupTitle = document.createElement("div");
-        groupTitle.className = "group-heading";
-        groupTitle.textContent = group.title;
-        container.appendChild(groupTitle);
-
-        if (group.hint) {
-          const gh = document.createElement("div");
-          gh.className = "group-hint";
-          gh.textContent = group.hint;
-          container.appendChild(gh);
-        }
-
-        group.items.forEach(q => {
-          const block = document.createElement("div");
-          block.className = "question-block";
-          block.dataset.questionId = q.id;
-
-          const p = document.createElement("p");
-          p.className = "question-text";
-          p.textContent = q.text;
-          block.appendChild(p);
-
-          const scale = document.createElement("div");
-          scale.className = "pill-scale";
-          scale.dataset.questionId = q.id;
-
-          const label = document.createElement("div");
-          label.className = "pill-scale-label";
-          label.textContent = "Your rating:";
-          scale.appendChild(label);
-
-          const options = [
-            { label: "Never", value: 1 },
-            { label: "Rarely", value: 2 },
-            { label: "Sometimes", value: 3 },
-            { label: "Often", value: 4 },
-            { label: "Always", value: 5 }
-          ];
-
-          options.forEach(opt => {
-            const div = document.createElement("div");
-            div.className = "pill-option";
-            div.innerHTML = `<span>${opt.label}</span><small>${opt.value}</small>`;
-            div.dataset.value = String(opt.value);
-            div.addEventListener("click", () => {
-              answers[q.id] = opt.value;
-              // deselect siblings
-              scale.querySelectorAll(".pill-option").forEach(el => {
-                el.classList.toggle("selected", el === div);
-              });
-              // clear missing highlight if it was set
-              block.classList.remove("missing");
-              updateQuestionProgress();
-            });
-            scale.appendChild(div);
-          });
-
-          block.appendChild(scale);
-          container.appendChild(block);
-        });
-      });
+    function goToStep2(session) {
+      show(step1, false);
+      show(step2, true);
+      setErr(step1Err, "");
+      setOk(step1Ok, "");
+      setErr(submitErr, "");
+      setOk(submitOk, "");
+      sessionNote.textContent = session?.campaignId ? `Code verified. (Cycle stored silently: ${session.campaignId})` : "";
     }
 
-    async function loadCurrentCampaign() {
-      const errorEl = document.getElementById("code-error");
-      const cycleHintEl = document.getElementById("cycle-hint");
-      errorEl.textContent = "";
+    function goToStep1() {
+      show(step2, false);
+      show(step1, true);
+      setErr(submitErr, "");
+      setOk(submitOk, "");
+      codeInput.value = "";
+    }
+
+    // Resume if user refreshes mid-form
+    const existing = loadSession();
+    if (existing) {
+      goToStep2(existing);
+    }
+
+    startBtn.addEventListener("click", async () => {
+      const code = (codeInput.value || "").trim().toUpperCase();
+      setErr(step1Err, "");
+      setOk(step1Ok, "");
+
+      if (!code) return setErr(step1Err, "Please enter a code.");
+
+      startBtn.disabled = true;
+      startBtn.textContent = "Checking…";
 
       try {
-        const res = await fetch(API_BASE + "/api/current-campaign");
-        const data = await res.json();
-
-        if (!data.campaignId) {
-          errorEl.textContent = "The feedback cycle is not configured yet. Please contact your admin.";
-          document.getElementById("start-btn").disabled = true;
-          return;
-        }
-
-        CAMPAIGN_ID = data.campaignId;
-        cycleHintEl.textContent =
-          `Use the one-time feedback code provided to you for the ${CAMPAIGN_ID} review cycle. This links your feedback to the correct team leader without revealing who you are.`;
-      } catch (e) {
-        console.error(e);
-        errorEl.textContent = "Unable to load the current feedback cycle. Please try again later.";
-        document.getElementById("start-btn").disabled = true;
-      }
-    }
-
-    buildQuestionsUI();
-    setStep(1);
-    loadCurrentCampaign();
-
-    document.getElementById("start-btn").addEventListener("click", async () => {
-      const code = document.getElementById("code-input").value.trim();
-      const errorEl = document.getElementById("code-error");
-      errorEl.textContent = "";
-
-      if (!CAMPAIGN_ID) {
-        errorEl.textContent = "Feedback cycle is not configured. Please contact your admin.";
-        return;
-      }
-
-      if (!code) {
-        errorEl.textContent = "Please enter the feedback code.";
-        return;
-      }
-
-      try {
-        const res = await fetch(API_BASE + "/api/start", {
+        const res = await fetch(API + "/api/start", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ code, campaignId: CAMPAIGN_ID })
+          body: JSON.stringify({ code })
         });
-        const data = await res.json();
+
+        const data = await res.json().catch(() => ({}));
 
         if (!res.ok) {
-          errorEl.textContent = data.error || "Unable to start feedback with that code.";
-          return;
+          startBtn.disabled = false;
+          startBtn.textContent = "Start";
+          return setErr(step1Err, data.error || "Unable to start. Please check your code.");
         }
 
-        sessionId = data.sessionId;
-        setStep(2);
+        const session = {
+          code,
+          campaignId: data.campaignId,
+          teamLeaderId: data.teamLeaderId,
+          startedAt: Date.now()
+        };
+
+        saveSession(session);
+        setOk(step1Ok, "Code accepted. Loading questionnaire…");
+        goToStep2(session);
+
+        startBtn.disabled = false;
+        startBtn.textContent = "Start";
       } catch (e) {
         console.error(e);
-        errorEl.textContent = "There was a problem contacting the server. Please try again.";
+        startBtn.disabled = false;
+        startBtn.textContent = "Start";
+        setErr(step1Err, "Network error. Please try again.");
       }
     });
 
-    document.getElementById("back-btn").addEventListener("click", () => {
-      setStep(1);
+    restartBtn.addEventListener("click", () => {
+      clearSession();
+      goToStep1();
+      show(step1Ok, false);
+      show(step1Err, false);
+      // reset form fields
+      step2.reset();
     });
 
-    document.getElementById("submit-btn").addEventListener("click", async () => {
-  const errEl = document.getElementById("submit-error");
-  const successEl = document.getElementById("submit-success");
-  errEl.textContent = "";
-  successEl.textContent = "";
+    step2.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      setErr(submitErr, "");
+      setOk(submitOk, "");
 
-  if (!sessionId) {
-    errEl.textContent = "Your session has expired. Please go back and re-enter your code.";
-    return;
-  }
-
-      // Clear previous missing highlights
-      document.querySelectorAll(".question-block").forEach(block => {
-        block.classList.remove("missing");
-      });
-
-      const answeredCount = Object.keys(answers).length;
-      if (answeredCount !== TOTAL_QUESTIONS) {
-        errEl.textContent = "Please answer all rating questions before submitting.";
-
-        // Highlight missing questions
-        document.querySelectorAll(".question-block").forEach(block => {
-          const qid = block.dataset.questionId;
-          if (!answers[qid]) {
-            block.classList.add("missing");
-          }
-        });
-
-        return;
+      const session = loadSession();
+      if (!session || !session.code || !session.campaignId || !session.teamLeaderId) {
+        // This is the main fix: avoid vague “expired”; tell user exactly what to do.
+        return setErr(submitErr, "Your session is missing. Please click “Start over” and re-enter your code.");
       }
 
-      const strengths = document.getElementById("strengths").value.trim();
-      const development = document.getElementById("development").value.trim();
-      const other = document.getElementById("other").value.trim();
+      // Collect scores
+      const scores = {};
+      for (const q of questions) {
+        const checked = step2.querySelector(`input[name="${q.id}"]:checked`);
+        if (!checked) return setErr(submitErr, "Please answer every question before submitting.");
+        scores[q.id] = Number(checked.value);
+      }
+
+      // Text areas are required
+      const strengthsText = document.getElementById("strengthsText").value.trim();
+      const devText = document.getElementById("devText").value.trim();
+      const otherText = document.getElementById("otherText").value.trim();
+
+      if (!strengthsText || !devText || !otherText) {
+        return setErr(submitErr, "Please complete all written questions before submitting.");
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Submitting…";
 
       try {
-        const res = await fetch(API_BASE + "/api/submit", {
+        const res = await fetch(API + "/api/submit-feedback", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            sessionId,
-            scores: answers,
-            comments: { strengths, development, other }
+            code: session.code,
+            campaignId: session.campaignId,
+            teamLeaderId: session.teamLeaderId,
+            scores,
+            strengthsText,
+            devText,
+            otherText
           })
         });
-        const data = await res.json();
+
+        const data = await res.json().catch(() => ({}));
 
         if (!res.ok) {
-          errEl.textContent = data.error || "There was a problem submitting your feedback.";
-          return;
+          submitBtn.disabled = false;
+          submitBtn.textContent = "Submit feedback";
+          return setErr(submitErr, data.error || "Unable to submit feedback. Please try again.");
         }
 
-        successEl.textContent = "Thank you – your feedback has been submitted.";
-        document.getElementById("submit-btn").disabled = true;
-        document.getElementById("submit-btn").textContent = "Submitted";
-        progressFillEl.style.width = "100%";
-        progressPercentEl.textContent = "100%";
-      } catch (e) {
-        console.error(e);
-        errEl.textContent = "There was a problem contacting the server. Please try again.";
+        setOk(submitOk, "Thanks — your feedback has been submitted successfully.");
+        clearSession();
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Submit feedback";
+
+        // Disable form after submit
+        Array.from(step2.querySelectorAll("input, textarea, button")).forEach(el => {
+          if (el.id !== "restartBtn") el.disabled = true;
+        });
+      } catch (err) {
+        console.error(err);
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Submit feedback";
+        setErr(submitErr, "Network error while submitting. Please try again.");
       }
     });
   </script>

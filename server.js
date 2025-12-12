@@ -9,6 +9,14 @@ require("dotenv").config();
 
 const { OPENAI_API_KEY, ADMIN_PASSWORD, DATABASE_URL, PORT } = process.env;
 
+const app = express();
+const SERVER_PORT = PORT || 4000;
+const MIN_COMMENTS_FOR_DISPLAY = 3;
+
+app.use(cors());
+app.use(express.json());
+app.use(express.static(path.join(__dirname, "public"))); // serves index.html, admin.html etc
+
 // ---------- OpenAI (optional) ----------
 let openai = null;
 if (OPENAI_API_KEY) {
@@ -16,20 +24,9 @@ if (OPENAI_API_KEY) {
   openai = new OpenAI({ apiKey: OPENAI_API_KEY });
 }
 
-// ---------- Express setup ----------
-const app = express();
-const SERVER_PORT = PORT || 4000;
-const MIN_COMMENTS_FOR_DISPLAY = 3;
-
-app.use(cors());
-app.use(express.json());
-app.use(express.static(path.join(__dirname, "public"))); // index.html, admin.html, etc.
-
 // ---------- Postgres / Neon ----------
 if (!DATABASE_URL) {
-  console.warn(
-    "WARNING: DATABASE_URL not set. The server will not be able to connect to Postgres."
-  );
+  console.warn("WARNING: DATABASE_URL not set. Postgres connection will fail.");
 }
 
 const pool = new Pool({
@@ -37,7 +34,28 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false },
 });
 
-// Initialise schema + seed TLs
+// ---------- Admin auth ----------
+function adminAuth(req, res, next) {
+  const key = req.headers["x-admin-key"];
+  if (!ADMIN_PASSWORD) {
+    console.warn("ADMIN_PASSWORD not set – admin endpoints are unprotected!");
+    return next();
+  }
+  if (!key || key !== ADMIN_PASSWORD) return res.status(401).json({ error: "Unauthorized" });
+  next();
+}
+
+// ---------- Helpers ----------
+function generateCode() {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const segment = () =>
+    Array.from({ length: 4 })
+      .map(() => chars[Math.floor(Math.random() * chars.length)])
+      .join("");
+  return `${segment()}-${segment()}`;
+}
+
+// ---------- DB init ----------
 async function initDb() {
   const client = await pool.connect();
   try {
@@ -60,6 +78,7 @@ async function initDb() {
       );
     `);
 
+    // Codes belong to a campaign; deleting a campaign deletes its codes automatically
     await client.query(`
       CREATE TABLE IF NOT EXISTS codes (
         id             SERIAL PRIMARY KEY,
@@ -72,6 +91,7 @@ async function initDb() {
       );
     `);
 
+    // Feedback stores campaign_id + team_leader_id as text (simple + robust)
     await client.query(`
       CREATE TABLE IF NOT EXISTS feedback (
         id             SERIAL PRIMARY KEY,
@@ -86,16 +106,8 @@ async function initDb() {
       );
     `);
 
-    // Seed default team leaders
-    const defaultTLs = [
-      "Gill",
-      "Kristian",
-      "Nicola",
-      "Trish",
-      "Teri",
-      "Kate-Marie",
-      "Katie",
-    ];
+    // Seed default TLs
+    const defaultTLs = ["Gill", "Kristian", "Nicola", "Trish", "Teri", "Kate-Marie", "Katie"];
     for (const name of defaultTLs) {
       await client.query(
         `INSERT INTO team_leaders (name, active)
@@ -110,35 +122,13 @@ async function initDb() {
   } catch (err) {
     await client.query("ROLLBACK");
     console.error("Error initialising DB:", err);
+    throw err;
   } finally {
     client.release();
   }
 }
 
 initDb().catch((e) => console.error(e));
-
-// ---------- Admin auth middleware ----------
-function adminAuth(req, res, next) {
-  const key = req.headers["x-admin-key"];
-  if (!ADMIN_PASSWORD) {
-    console.warn("ADMIN_PASSWORD not set – admin endpoints are unprotected!");
-    return next();
-  }
-  if (!key || key !== ADMIN_PASSWORD) {
-    return res.status(401).json({ error: "Unauthorized" });
-  }
-  next();
-}
-
-// ---------- Helper: random code ----------
-function generateCode() {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  const segment = () =>
-    Array.from({ length: 4 })
-      .map(() => chars[Math.floor(Math.random() * chars.length)])
-      .join("");
-  return `${segment()}-${segment()}`;
-}
 
 // ===================================================
 //                    ADMIN API
@@ -159,14 +149,11 @@ app.get("/api/admin/campaigns", adminAuth, async (req, res) => {
   }
 });
 
-// Create / update campaign
+// Create/update campaign
 app.post("/api/admin/campaigns", adminAuth, async (req, res) => {
   const { campaignId, label } = req.body;
-  if (!campaignId || !label) {
-    return res
-      .status(400)
-      .json({ error: "campaignId and label are required." });
-  }
+  if (!campaignId || !label) return res.status(400).json({ error: "campaignId and label are required." });
+
   try {
     await pool.query(
       `INSERT INTO campaigns (id, label)
@@ -181,24 +168,53 @@ app.post("/api/admin/campaigns", adminAuth, async (req, res) => {
   }
 });
 
-// List team leaders – return *names* array for admin UI
+// Delete campaign + all its feedback + codes
+app.post("/api/admin/delete-campaign", adminAuth, async (req, res) => {
+  const { campaignId } = req.body;
+  if (!campaignId) return res.status(400).json({ error: "campaignId required." });
+
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    // Delete feedback first (since feedback.campaign_id isn't FK constrained)
+    const fbRes = await client.query(`DELETE FROM feedback WHERE campaign_id = $1`, [campaignId]);
+
+    // Delete campaign (codes will cascade delete)
+    const campRes = await client.query(`DELETE FROM campaigns WHERE id = $1`, [campaignId]);
+
+    await client.query("COMMIT");
+
+    if (campRes.rowCount === 0) {
+      return res.status(404).json({ error: "Campaign not found." });
+    }
+
+    res.json({
+      ok: true,
+      deletedCampaigns: campRes.rowCount,
+      deletedFeedback: fbRes.rowCount,
+    });
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error("Error /api/admin/delete-campaign:", err);
+    res.status(500).json({ error: "DB error deleting campaign." });
+  } finally {
+    client.release();
+  }
+});
+
+// Team leaders list (admin UI expects array of strings)
 app.get("/api/admin/team-leaders", adminAuth, async (req, res) => {
   try {
-    const result = await pool.query(
-      `SELECT name, active
-       FROM team_leaders
-       ORDER BY name`
-    );
-
-    const names = result.rows.map((row) => row.name);
-    res.json({ teamLeaders: names });
+    const result = await pool.query(`SELECT name FROM team_leaders WHERE active = TRUE ORDER BY name`);
+    res.json({ teamLeaders: result.rows.map(r => r.name) });
   } catch (err) {
     console.error("Error /api/admin/team-leaders:", err);
     res.status(500).json({ error: "DB error fetching team leaders." });
   }
 });
 
-// Add / reactivate TL
+// Add/reactivate TL
 app.post("/api/admin/team-leaders", adminAuth, async (req, res) => {
   const { name } = req.body;
   if (!name) return res.status(400).json({ error: "name required" });
@@ -223,10 +239,7 @@ app.delete("/api/admin/team-leaders", adminAuth, async (req, res) => {
   if (!name) return res.status(400).json({ error: "name required" });
 
   try {
-    const result = await pool.query(
-      `UPDATE team_leaders SET active = FALSE WHERE name = $1`,
-      [name.trim()]
-    );
+    const result = await pool.query(`UPDATE team_leaders SET active = FALSE WHERE name = $1`, [name.trim()]);
     res.json({ ok: true, affectedRows: result.rowCount });
   } catch (err) {
     console.error("Error DELETE /api/admin/team-leaders:", err);
@@ -237,19 +250,18 @@ app.delete("/api/admin/team-leaders", adminAuth, async (req, res) => {
 // Overview per TL for a campaign
 app.get("/api/admin/overview", adminAuth, async (req, res) => {
   const { campaignId } = req.query;
-  if (!campaignId)
-    return res.status(400).json({ error: "campaignId is required." });
+  if (!campaignId) return res.status(400).json({ error: "campaignId is required." });
 
   try {
     const result = await pool.query(
       `
-      SELECT f.team_leader_id AS "teamLeaderId",
-             COUNT(*)          AS "responseCount",
-             AVG(f.overall_score)::float AS "avgScore"
-      FROM feedback f
-      WHERE f.campaign_id = $1
-      GROUP BY f.team_leader_id
-      ORDER BY f.team_leader_id;
+      SELECT team_leader_id AS "teamLeaderId",
+             COUNT(*) AS "responseCount",
+             AVG(overall_score)::float AS "avgScore"
+      FROM feedback
+      WHERE campaign_id = $1
+      GROUP BY team_leader_id
+      ORDER BY team_leader_id;
       `,
       [campaignId]
     );
@@ -264,9 +276,7 @@ app.get("/api/admin/overview", adminAuth, async (req, res) => {
 app.get("/api/admin/detail", adminAuth, async (req, res) => {
   const { campaignId, teamLeaderId } = req.query;
   if (!campaignId || !teamLeaderId) {
-    return res
-      .status(400)
-      .json({ error: "campaignId and teamLeaderId required." });
+    return res.status(400).json({ error: "campaignId and teamLeaderId required." });
   }
 
   try {
@@ -292,61 +302,70 @@ app.get("/api/admin/detail", adminAuth, async (req, res) => {
       });
     }
 
-    // Overall average
-    const avgOverall =
-      rows.reduce((sum, r) => sum + (r.overall_score || 0), 0) /
-      responseCount;
+    const avgOverall = rows.reduce((sum, r) => sum + (r.overall_score || 0), 0) / responseCount;
 
-    // Question averages
-    const questionSums = {};
-    const questionCounts = {};
+    const sums = {};
+    const counts = {};
 
     for (const row of rows) {
-      if (!row.scores_json) continue;
       let scores;
       try {
         scores = JSON.parse(row.scores_json);
       } catch {
         continue;
       }
-      Object.entries(scores).forEach(([qid, val]) => {
+      for (const [qid, val] of Object.entries(scores)) {
         const n = Number(val);
-        if (!Number.isFinite(n)) return;
-        questionSums[qid] = (questionSums[qid] || 0) + n;
-        questionCounts[qid] = (questionCounts[qid] || 0) + 1;
-      });
+        if (!Number.isFinite(n)) continue;
+        sums[qid] = (sums[qid] || 0) + n;
+        counts[qid] = (counts[qid] || 0) + 1;
+      }
     }
 
     const questionAverages = {};
-    Object.keys(questionSums).forEach((qid) => {
-      questionAverages[qid] = questionSums[qid] / questionCounts[qid];
-    });
+    for (const qid of Object.keys(sums)) {
+      questionAverages[qid] = sums[qid] / counts[qid];
+    }
 
-    // Comments (only if enough responses)
     let comments = null;
     if (responseCount >= MIN_COMMENTS_FOR_DISPLAY) {
       comments = {
-        strengths: rows
-          .map((r) => (r.strengths_text || "").trim())
-          .filter((t) => t.length > 0),
-        devs: rows
-          .map((r) => (r.dev_text || "").trim())
-          .filter((t) => t.length > 0),
-        others: rows
-          .map((r) => (r.other_text || "").trim())
-          .filter((t) => t.length > 0),
+        strengths: rows.map(r => (r.strengths_text || "").trim()).filter(Boolean),
+        devs: rows.map(r => (r.dev_text || "").trim()).filter(Boolean),
+        others: rows.map(r => (r.other_text || "").trim()).filter(Boolean),
       };
     }
 
-    res.json({
-      responseCount,
-      avgOverall,
-      questionAverages,
-      comments,
-    });
+    res.json({ responseCount, avgOverall, questionAverages, comments });
   } catch (err) {
     console.error("Error GET /api/admin/detail:", err);
     res.status(500).json({ error: "DB error fetching detail." });
+  }
+});
+
+// Previous campaign (for compare)
+app.get("/api/admin/previous-campaign", adminAuth, async (req, res) => {
+  const { campaignId } = req.query;
+  if (!campaignId) return res.status(400).json({ error: "campaignId is required." });
+
+  try {
+    const result = await pool.query(
+      `
+      SELECT id, label
+      FROM campaigns
+      WHERE created_at < (SELECT created_at FROM campaigns WHERE id = $1)
+      ORDER BY created_at DESC
+      LIMIT 1;
+      `,
+      [campaignId]
+    );
+
+    if (!result.rowCount) return res.status(404).json({ error: "No previous campaign." });
+
+    res.json({ id: result.rows[0].id, label: result.rows[0].label });
+  } catch (err) {
+    console.error("Error GET /api/admin/previous-campaign:", err);
+    res.status(500).json({ error: "DB error fetching previous campaign." });
   }
 });
 
@@ -354,9 +373,7 @@ app.get("/api/admin/detail", adminAuth, async (req, res) => {
 app.post("/api/admin/delete-feedback", adminAuth, async (req, res) => {
   const { campaignId, teamLeaderId } = req.body;
   if (!campaignId || !teamLeaderId) {
-    return res
-      .status(400)
-      .json({ error: "campaignId and teamLeaderId required." });
+    return res.status(400).json({ error: "campaignId and teamLeaderId required." });
   }
 
   try {
@@ -365,7 +382,6 @@ app.post("/api/admin/delete-feedback", adminAuth, async (req, res) => {
       [campaignId, teamLeaderId]
     );
 
-    // Make all codes for that TL+campaign reusable
     await pool.query(
       `UPDATE codes
        SET used = FALSE, used_at = NULL
@@ -380,13 +396,11 @@ app.post("/api/admin/delete-feedback", adminAuth, async (req, res) => {
   }
 });
 
-// Generate feedback codes
+// Generate codes
 app.post("/api/admin/generate-codes", adminAuth, async (req, res) => {
   const { campaignId, teamLeaderId, count } = req.body;
   if (!campaignId || !teamLeaderId || !count) {
-    return res
-      .status(400)
-      .json({ error: "campaignId, teamLeaderId and count required." });
+    return res.status(400).json({ error: "campaignId, teamLeaderId and count required." });
   }
 
   const num = Math.max(1, Math.min(Number(count) || 1, 500));
@@ -397,23 +411,17 @@ app.post("/api/admin/generate-codes", adminAuth, async (req, res) => {
       let code;
       let inserted = false;
 
-      // retry until we get a unique code
       while (!inserted) {
         code = generateCode();
         try {
           await pool.query(
-            `
-            INSERT INTO codes (code, campaign_id, team_leader_id, used)
-            VALUES ($1, $2, $3, FALSE);
-            `,
+            `INSERT INTO codes (code, campaign_id, team_leader_id, used)
+             VALUES ($1, $2, $3, FALSE);`,
             [code, campaignId, teamLeaderId]
           );
           inserted = true;
         } catch (err) {
-          if (err.code === "23505") {
-            // duplicate code, try again
-            continue;
-          }
+          if (err.code === "23505") continue; // duplicate
           throw err;
         }
       }
@@ -427,17 +435,13 @@ app.post("/api/admin/generate-codes", adminAuth, async (req, res) => {
   }
 });
 
-// AI summary of comments using OpenAI
+// AI summary
 app.get("/api/admin/ai-summary", adminAuth, async (req, res) => {
   const { campaignId, teamLeaderId } = req.query;
   if (!campaignId || !teamLeaderId) {
-    return res
-      .status(400)
-      .json({ error: "campaignId and teamLeaderId required." });
+    return res.status(400).json({ error: "campaignId and teamLeaderId required." });
   }
-  if (!openai) {
-    return res.status(400).json({ error: "OpenAI key not configured." });
-  }
+  if (!openai) return res.status(400).json({ error: "OpenAI key not configured." });
 
   try {
     const result = await pool.query(
@@ -450,8 +454,8 @@ app.get("/api/admin/ai-summary", adminAuth, async (req, res) => {
       [campaignId, teamLeaderId]
     );
 
-    if (!result.rowCount) {
-      return res.status(400).json({ error: "No comments available yet." });
+    if (!result.rowCount || result.rowCount < MIN_COMMENTS_FOR_DISPLAY) {
+      return res.status(400).json({ error: `Need at least ${MIN_COMMENTS_FOR_DISPLAY} responses for AI summary.` });
     }
 
     const strengths = [];
@@ -466,7 +470,7 @@ app.get("/api/admin/ai-summary", adminAuth, async (req, res) => {
     const prompt = `
 You are summarising anonymous 360° feedback for a team leader.
 Do NOT quote or echo specific sentences, and do NOT include any identifying details.
-Instead, describe overall themes in neutral language.
+Instead, describe themes in neutral language.
 
 Strengths comments:
 ${strengths.join("\n\n")}
@@ -477,10 +481,11 @@ ${devs.join("\n\n")}
 Other comments:
 ${others.join("\n\n")}
 
-Write a short, neutral summary (3–6 bullet points) that:
-- highlights clear strengths
-- neutrally describes development areas
-- avoids any identifying detail or specific quotes.
+Write a short summary (6–10 bullet points) split into:
+- Strengths (themes)
+- Development areas (themes)
+- Other notes (if any)
+Keep it broad, non-identifying.
 `;
 
     const resp = await openai.responses.create({
@@ -500,38 +505,23 @@ Write a short, neutral summary (3–6 bullet points) that:
 //             PUBLIC QUESTIONNAIRE API
 // ===================================================
 
-// Current campaign for questionnaire header
+// Keep this for compatibility, but the questionnaire UI won't show it
 app.get("/api/current-campaign", async (req, res) => {
   try {
     const result = await pool.query(
-      `
-      SELECT id, label
-      FROM campaigns
-      ORDER BY created_at DESC
-      LIMIT 1;
-      `
+      `SELECT id, label FROM campaigns ORDER BY created_at DESC LIMIT 1;`
     );
-
-    if (!result.rowCount) {
-      return res.status(404).json({ error: "No active campaign configured." });
-    }
-
-    const row = result.rows[0];
-    res.json({ campaignId: row.id, label: row.label });
+    if (!result.rowCount) return res.status(404).json({ error: "No active campaign configured." });
+    res.json({ campaignId: result.rows[0].id, label: result.rows[0].label });
   } catch (err) {
     console.error("Error GET /api/current-campaign:", err);
-    res
-      .status(500)
-      .json({ error: "DB error fetching current campaign." });
+    res.status(500).json({ error: "DB error fetching current campaign." });
   }
 });
 
-// Shared code verification logic
 async function handleStartSession(req, res) {
   const { code } = req.body;
-  if (!code) {
-    return res.status(400).json({ error: "Code is required." });
-  }
+  if (!code) return res.status(400).json({ error: "Code is required." });
 
   try {
     const result = await pool.query(
@@ -545,15 +535,10 @@ async function handleStartSession(req, res) {
       [code.trim()]
     );
 
-    if (!result.rowCount) {
-      return res.status(400).json({ error: "Code not found." });
-    }
+    if (!result.rowCount) return res.status(400).json({ error: "Code not found." });
 
     const row = result.rows[0];
-
-    if (row.used) {
-      return res.status(400).json({ error: "This code has already been used." });
-    }
+    if (row.used) return res.status(400).json({ error: "This code has already been used." });
 
     res.json({
       ok: true,
@@ -567,62 +552,38 @@ async function handleStartSession(req, res) {
   }
 }
 
-// Old path used by questionnaire JS
-app.post("/api/start", (req, res) => {
-  handleStartSession(req, res);
-});
-
-// Newer path, same logic
-app.post("/api/start-session", (req, res) => {
-  handleStartSession(req, res);
-});
+// Questionnaire uses /api/start
+app.post("/api/start", (req, res) => handleStartSession(req, res));
+// Also support /api/start-session
+app.post("/api/start-session", (req, res) => handleStartSession(req, res));
 
 // Submit feedback
 app.post("/api/submit-feedback", async (req, res) => {
-  const {
-    code,
-    campaignId,
-    teamLeaderId,
-    scores, // object: { q2: 5, q3: 4, ... }
-    overallScore,
-    strengthsText,
-    devText,
-    otherText,
-  } = req.body;
+  const { code, campaignId, teamLeaderId, scores, strengthsText, devText, otherText } = req.body;
 
   if (!code || !campaignId || !teamLeaderId || !scores) {
     return res.status(400).json({ error: "Missing required fields." });
   }
 
+  // Compute overall from scores
+  const vals = Object.values(scores).map(Number).filter(n => Number.isFinite(n));
+  const overall = vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
+
   try {
-    // verify code and mark used
     const codeResult = await pool.query(
-      `SELECT id, used FROM codes WHERE code = $1 AND campaign_id = $2 AND team_leader_id = $3`,
+      `SELECT id, used
+       FROM codes
+       WHERE code = $1 AND campaign_id = $2 AND team_leader_id = $3`,
       [code.trim(), campaignId, teamLeaderId]
     );
-    if (!codeResult.rowCount) {
-      return res.status(400).json({ error: "Invalid feedback code." });
-    }
-    const codeRow = codeResult.rows[0];
-    if (codeRow.used) {
-      return res.status(400).json({ error: "This code has already been used." });
-    }
 
-    // compute overall if not supplied
-    let overall = Number(overallScore);
-    if (!Number.isFinite(overall)) {
-      const vals = Object.values(scores)
-        .map((v) => Number(v))
-        .filter((n) => Number.isFinite(n));
-      overall =
-        vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
-    }
+    if (!codeResult.rowCount) return res.status(400).json({ error: "Invalid feedback code." });
+    if (codeResult.rows[0].used) return res.status(400).json({ error: "This code has already been used." });
 
     await pool.query(
       `
       INSERT INTO feedback
-        (campaign_id, team_leader_id, scores_json, overall_score,
-         strengths_text, dev_text, other_text)
+        (campaign_id, team_leader_id, scores_json, overall_score, strengths_text, dev_text, other_text)
       VALUES ($1, $2, $3, $4, $5, $6, $7);
       `,
       [
@@ -636,10 +597,7 @@ app.post("/api/submit-feedback", async (req, res) => {
       ]
     );
 
-    await pool.query(
-      `UPDATE codes SET used = TRUE, used_at = NOW() WHERE id = $1`,
-      [codeRow.id]
-    );
+    await pool.query(`UPDATE codes SET used = TRUE, used_at = NOW() WHERE id = $1`, [codeResult.rows[0].id]);
 
     res.json({ ok: true });
   } catch (err) {
@@ -648,7 +606,6 @@ app.post("/api/submit-feedback", async (req, res) => {
   }
 });
 
-// ---------- START SERVER ----------
 app.listen(SERVER_PORT, () => {
-  console.log(`Server listening on http://localhost:${SERVER_PORT}`);
+  console.log(`Server listening on port ${SERVER_PORT}`);
 });
