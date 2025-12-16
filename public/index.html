@@ -339,9 +339,16 @@
 
     // Resume if user refreshes mid-form
     const existing = loadSession();
-    if (existing) {
-      goToStep2(existing);
-    }
+if (existing && existing.sessionToken) {
+  gotoStep2(existing);
+} else {
+  clearSession();
+show(step2, false);
+show(step1, true);
+setErr(step1Err, "");
+setErr(submitErr, "");
+}
+
 
     startBtn.addEventListener("click", async () => {
       const code = (codeInput.value || "").trim().toUpperCase();
@@ -369,13 +376,17 @@
         }
 
         const session = {
-          code,
-          campaignId: data.campaignId,
-          teamLeaderId: data.teamLeaderId,
-          startedAt: Date.now()
-        };
+  sessionToken: data.sessionToken,   // ✅ THIS IS NOW REQUIRED
+  startedAt: Date.now()
+};
+saveSession(session);
+if (!data.sessionToken) {
+  startBtn.disabled = false;
+  startBtn.textContent = "Start";
+  return setErr(step1Err, "Server did not return a session token. Please try again.");
+}
 
-        saveSession(session);
+
         setOk(step1Ok, "Code accepted. Loading questionnaire…");
         goToStep2(session);
 
