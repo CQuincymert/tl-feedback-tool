@@ -189,22 +189,24 @@ app.get("/api/current-campaign", async (req, res) => {
 
 // Step 1: verify code -> returns sessionToken (this locks cycle + TL)
 app.post("/api/start-session", async (req, res) => {
-  const code = safeText(req.body?.code);
+  const code = safeText(req.body?.code).trim().toUpperCase();
   if (!code) return res.status(400).json({ error: "Code is required." });
 
   try {
     const r = await pool.query(
       `
       SELECT
-        c.id AS code_id,
-        c.used,
-        cam.campaign_key AS campaign_key,
-        cam.label AS campaign_label,
-        tl.id AS team_leader_id
+  c.id AS code_id,
+  c.used,
+  cam.id AS campaign_id,          
+  cam.campaign_key,
+  cam.label AS campaign_label,
+  tl.id AS team_leader_id
+
       FROM codes c
       JOIN campaigns cam ON cam.id = c.campaign_id
       JOIN team_leaders tl ON tl.id = c.team_leader_id
-      WHERE c.code = $1
+      WHERE UPPER(TRIM(c.code)) = $1
       `,
       [code]
     );
@@ -216,10 +218,10 @@ app.post("/api/start-session", async (req, res) => {
 
     // Create token that binds the submission to the correct campaign + TL
     const sessionToken = signSessionToken({
-      codeId: row.code_id,
-      campaignId: row.campaign_key,
-      teamLeaderId: row.team_leader_id,
-    });
+  codeId: row.code_id,
+  campaignId: row.campaign_id,    // 
+  teamLeaderId: row.team_leader_id
+});
 
     // Do NOT reveal cycle label in UI if you don’t want to
     res.json({
