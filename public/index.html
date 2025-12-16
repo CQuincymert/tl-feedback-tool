@@ -431,18 +431,17 @@
 
       try {
         const res = await fetch(API + "/api/submit-feedback", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            code: session.code,
-            campaignId: session.campaignId,
-            teamLeaderId: session.teamLeaderId,
-            scores,
-            strengthsText,
-            devText,
-            otherText
-          })
-        });
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    sessionToken: session.sessionToken,   // ✅ REQUIRED
+    scores,
+    strengthsText,
+    devText,
+    otherText
+  })
+});
+
 
         const data = await res.json().catch(() => ({}));
 
