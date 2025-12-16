@@ -187,54 +187,59 @@ app.get("/api/current-campaign", async (req, res) => {
   }
 });
 
-// Step 1: verify code -> returns sessionToken (this locks cycle + TL)
+// POST /api/start-session
+// Verifies a feedback code and returns a sessionToken
 app.post("/api/start-session", async (req, res) => {
-  const code = safeText(req.body?.code).trim().toUpperCase();
+  const codeRaw = String(req.body?.code || "");
+  const code = codeRaw.trim().toUpperCase();
   if (!code) return res.status(400).json({ error: "Code is required." });
 
   try {
     const r = await pool.query(
       `
       SELECT
-  c.id AS code_id,
-  c.used,
-  cam.id AS campaign_id,          
-  cam.campaign_key,
-  cam.label AS campaign_label,
-  tl.id AS team_leader_id
-
+        c.id              AS code_id,
+        c.used            AS used,
+        c.campaign_id     AS campaign_id,
+        cam.campaign_key  AS campaign_key,
+        cam.label         AS campaign_label,
+        c.team_leader_id  AS team_leader_id
       FROM codes c
       JOIN campaigns cam ON cam.id = c.campaign_id
-      JOIN team_leaders tl ON tl.id = c.team_leader_id
       WHERE UPPER(TRIM(c.code)) = $1
+      LIMIT 1
       `,
       [code]
     );
 
-    if (!r.rowCount) return res.status(404).json({ error: "Invalid code." });
+    if (!r.rowCount) {
+      return res.status(404).json({ error: "Invalid code." });
+    }
 
     const row = r.rows[0];
-    if (row.used) return res.status(409).json({ error: "This code has already been used." });
 
-    // Create token that binds the submission to the correct campaign + TL
+    if (row.used) {
+      return res.status(409).json({ error: "This code has already been used." });
+    }
+
     const sessionToken = signSessionToken({
-  codeId: row.code_id,
-  campaignId: row.campaign_id,    // 
-  teamLeaderId: row.team_leader_id
-});
+      codeId: row.code_id,
+      campaignId: row.campaign_id,     // INTERNAL id
+      teamLeaderId: row.team_leader_id // INTERNAL id
+    });
 
-    // Do NOT reveal cycle label in UI if you don’t want to
     res.json({
       ok: true,
       sessionToken,
-      // returned silently for debugging/admin only
-      campaignLabel: row.campaign_label,
+      // not shown to user, useful for debugging
+      campaignLabel: row.campaign_label
     });
   } catch (e) {
     console.error("Error in /api/start-session:", e);
     res.status(500).json({ error: "Server error verifying code." });
   }
 });
+
 
 // Step 2: submit feedback (must include sessionToken)
 app.post("/api/submit-feedback", async (req, res) => {
@@ -498,36 +503,69 @@ function randPart(n) {
 }
 
 // Overview (MUST be scoped by campaignId)
+// ===============================
+// ADMIN: OVERVIEW (per TL, per cycle)
+// Accepts campaignId as either:
+// - campaigns.campaign_key (UI-friendly)  e.g. "2025-360"
+// - campaigns.id (internal DB id)         e.g. "a1b2c3..." or "2025-360" if you use that as id
+// ===============================
 app.get("/api/admin/overview", adminAuth, async (req, res) => {
-  const campaignId = safeText(req.query?.campaignId);
-  if (!campaignId) return res.status(400).json({ error: "campaignId required" });
+  const campaignIdOrKey = String(req.query.campaignId || "").trim();
+  if (!campaignIdOrKey) {
+    return res.status(400).json({ error: "campaignId is required." });
+  }
 
   try {
-    const cam = await pool.query(`SELECT id FROM campaigns WHERE campaign_key = $1`, [campaignId]);
-    if (!cam.rowCount) return res.status(404).json({ error: "Campaign not found." });
-    const campaignDbId = cam.rows[0].id;
+    // 1) Resolve campaign internal id from either key or id
+    const camRes = await pool.query(
+      `
+      SELECT id, campaign_key, label
+      FROM campaigns
+      WHERE campaign_key = $1 OR id = $1
+      LIMIT 1
+      `,
+      [campaignIdOrKey]
+    );
 
+    if (!camRes.rowCount) {
+      return res.status(404).json({ error: "Cycle not found." });
+    }
+
+    const campaign = camRes.rows[0];
+
+    // 2) Build overview by TL for that campaign.id
     const r = await pool.query(
       `
       SELECT
-        tl.name AS "teamLeaderId",
+        tl.id AS "teamLeaderId",
         COUNT(f.id)::int AS "responseCount",
-        AVG(f.overall_score) AS "avgScore"
+        COALESCE(AVG(f.overall_score), 0) AS "avgScore"
       FROM team_leaders tl
       LEFT JOIN feedback f
         ON f.team_leader_id = tl.id
        AND f.campaign_id = $1
       WHERE tl.active = true
-      GROUP BY tl.name
-      ORDER BY tl.name ASC
+      GROUP BY tl.id
+      ORDER BY tl.id ASC
       `,
-      [campaignDbId]
+      [campaign.id]
     );
 
-    res.json({ results: r.rows });
+    res.json({
+      campaign: {
+        id: campaign.id,
+        campaign_key: campaign.campaign_key,
+        label: campaign.label,
+      },
+      results: r.rows.map(row => ({
+        teamLeaderId: row.teamLeaderId,
+        responseCount: row.responseCount,
+        avgScore: row.avgScore ? Number(row.avgScore) : 0,
+      })),
+    });
   } catch (e) {
-    console.error(e);
-    res.status(500).json({ error: "db_error" });
+    console.error("Error in /api/admin/overview:", e);
+    res.status(500).json({ error: "DB error loading overview." });
   }
 });
 
