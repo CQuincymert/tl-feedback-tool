@@ -1,483 +1,257 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>360° Feedback</title>
+  <meta charset="UTF-8" />
+  <title>Anonymous Team Leader Feedback</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
   <style>
     body {
-      font-family: system-ui, -apple-system, Segoe UI, sans-serif;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       background: #f4f4f5;
       margin: 0;
-      padding: 2rem 1rem;
-      color: #0f172a;
+      padding: 2rem;
     }
-    .shell {
-      max-width: 900px;
+    .card {
+      max-width: 720px;
       margin: 0 auto;
       background: #fff;
-      border-radius: 14px;
+      border-radius: 12px;
       padding: 1.8rem 2.2rem;
-      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.12);
     }
-    h1 { margin: 0 0 0.5rem 0; }
-    h2 { margin-top: 1.4rem; }
-    .muted { color:#64748b; font-size:0.95rem; }
-    .card {
-      border:1px solid #e5e7eb;
-      border-radius:12px;
-      padding:1rem 1.1rem;
-      background:#f9fafb;
-      margin-top: 1rem;
-    }
-    .row { display:flex; gap:0.8rem; flex-wrap:wrap; align-items:center; }
-    input[type="text"], textarea {
+    h1 { margin-top: 0; }
+    .muted { color: #6b7280; font-size: 0.9rem; }
+    label { font-weight: 600; display: block; margin-top: 1rem; }
+    input, textarea {
       width: 100%;
-      padding: 0.55rem 0.65rem;
-      border-radius: 10px;
+      padding: 0.55rem;
+      margin-top: 0.3rem;
+      border-radius: 6px;
       border: 1px solid #d4d4d8;
-      font-size: 1rem;
-      background: #fff;
-      box-sizing: border-box;
+      font-size: 0.95rem;
     }
-    textarea { min-height: 90px; resize: vertical; }
+    textarea { min-height: 90px; }
     button {
-      padding: 0.55rem 0.9rem;
-      border-radius: 10px;
+      margin-top: 1.2rem;
+      padding: 0.55rem 1.2rem;
+      border-radius: 6px;
       border: none;
       background: #2563eb;
-      color: #fff;
-      font-size: 1rem;
+      color: white;
+      font-size: 0.95rem;
       cursor: pointer;
     }
-    button.secondary { background:#e5e7eb; color:#111827; }
-    button:disabled { opacity: 0.6; cursor: not-allowed; }
-    .err {
-      margin-top: 0.6rem;
-      color:#b91c1c;
-      background:#fef2f2;
-      border:1px solid #fecaca;
-      padding:0.7rem 0.8rem;
-      border-radius: 10px;
-      display:none;
+    button.secondary {
+      background: #e5e7eb;
+      color: #111827;
     }
-    .ok {
-      margin-top: 0.6rem;
-      color:#065f46;
-      background:#ecfdf5;
-      border:1px solid #a7f3d0;
-      padding:0.7rem 0.8rem;
-      border-radius: 10px;
-      display:none;
+    button:disabled {
+      background: #9ca3af;
+      cursor: not-allowed;
     }
-
-    .section-title {
-      margin: 1.2rem 0 0.4rem 0;
-      font-weight: 700;
-      font-size: 1.05rem;
-      color:#0f172a;
+    .error { color: #b91c1c; margin-top: 0.6rem; }
+    .ok { color: #047857; margin-top: 0.6rem; }
+    .hidden { display: none; }
+    .likert label {
+      display: inline-block;
+      margin-right: 0.8rem;
+      font-weight: normal;
     }
-
-    .q {
-      border: 1px solid #e5e7eb;
-      border-radius: 12px;
-      padding: 0.9rem 1rem;
-      margin-top: 0.8rem;
-      background:#fff;
+    .actions {
+      display: flex;
+      gap: 0.6rem;
+      margin-top: 1rem;
     }
-    .q label.title {
-      display:block;
-      font-weight: 600;
-      margin-bottom: 0.65rem;
-    }
-    .radios {
-      display:flex;
-      gap: 0.8rem;
-      flex-wrap:wrap;
-    }
-    .radios label {
-      display:flex;
-      align-items:center;
-      gap:0.35rem;
-      border:1px solid #e5e7eb;
-      border-radius: 999px;
-      padding:0.35rem 0.6rem;
-      background:#f9fafb;
-      cursor:pointer;
-    }
-    .footer-actions {
-      margin-top: 1.4rem;
-      display:flex;
-      gap:0.7rem;
-      align-items:center;
-      flex-wrap:wrap;
-    }
-    .tiny { font-size:0.88rem; color:#64748b; }
   </style>
 </head>
 <body>
-  <div class="shell">
-    <h1>360° Team Leader Feedback</h1>
-    <p class="muted">
-      This feedback is anonymous. Your responses will be combined into a summary report.
-      Please focus on observable behaviours and keep comments constructive.
-    </p>
 
-    <!-- STEP 1: ENTER CODE -->
-    <div id="step1" class="card">
-      <h2 style="margin:0 0 0.4rem 0;">Enter your feedback code</h2>
-      <p class="muted" style="margin:0 0 0.8rem 0;">
-        Enter the one-time code you were given to start the questionnaire.
-      </p>
+<div class="card">
+  <h1>Team Leader Feedback</h1>
+  <p class="muted">
+    Your feedback is anonymous. Please focus on behaviours and experiences rather than names or specific incidents.
+  </p>
 
-      <div class="row">
-        <div style="flex:1; min-width: 240px;">
-          <input type="text" id="codeInput" placeholder="e.g. ABCD-1234" autocomplete="off" />
-        </div>
-        <button id="startBtn">Start</button>
-      </div>
-
-      <div id="step1Err" class="err"></div>
-      <div id="step1Ok" class="ok"></div>
-      <p class="tiny" style="margin-top:0.8rem;">
-        Tip: once you submit, this code cannot be reused.
-      </p>
-    </div>
-
-    <!-- STEP 2: QUESTIONS -->
-    <form id="step2" class="card" style="display:none;">
-      <h2 style="margin:0 0 0.4rem 0;">Questionnaire</h2>
-      <p class="muted" style="margin:0 0 0.8rem 0;">
-        All questions are required.
-      </p>
-
-      <div class="section-title">Leadership and Management</div>
-      <div id="q2" class="q"></div>
-      <div id="q3" class="q"></div>
-      <div id="q4" class="q"></div>
-
-      <div class="section-title">Communication</div>
-      <div id="q5" class="q"></div>
-      <div id="q6" class="q"></div>
-      <div id="q7" class="q"></div>
-
-      <div class="section-title">Team Support and Development</div>
-      <div id="q8" class="q"></div>
-      <div id="q9" class="q"></div>
-      <div id="q10" class="q"></div>
-
-      <div class="section-title">Collaboration and Culture</div>
-      <div id="q11" class="q"></div>
-      <div id="q12" class="q"></div>
-      <div id="q13" class="q"></div>
-
-      <div class="section-title">Execution and Accountability</div>
-      <div id="q14" class="q"></div>
-      <div id="q15" class="q"></div>
-      <div id="q16" class="q"></div>
-
-      <div class="section-title">Open-ended questions</div>
-
-      <div class="q">
-        <label class="title" for="strengthsText">What are this team leader’s greatest strengths?</label>
-        <textarea id="strengthsText" required></textarea>
-      </div>
-
-      <div class="q">
-        <label class="title" for="devText">What could this team leader improve or develop further?</label>
-        <textarea id="devText" required></textarea>
-      </div>
-
-      <div class="q">
-        <label class="title" for="otherText">Is there anything else you would like to share that would help this leader succeed?</label>
-        <textarea id="otherText" required></textarea>
-      </div>
-
-      <div id="submitErr" class="err"></div>
-      <div id="submitOk" class="ok"></div>
-
-      <div class="footer-actions">
-        <button id="submitBtn" type="submit">Submit feedback</button>
-        <button id="restartBtn" type="button" class="secondary">Start over</button>
-        <span class="tiny" id="sessionNote"></span>
-      </div>
-    </form>
+  <!-- STEP 1 -->
+  <div id="step1">
+    <h3>Step 1: Enter your feedback code</h3>
+    <label>Feedback code</label>
+    <input id="codeInput" placeholder="e.g. ABCD-1234" />
+    <div id="step1Err" class="error"></div>
+    <div id="step1Ok" class="ok"></div>
+    <button id="startBtn">Start feedback</button>
   </div>
 
-  <script>
-    // IMPORTANT: if hosted on same domain, use relative paths
-    const API = ""; // keep blank to call same-origin, e.g. /api/start-session
+  <!-- STEP 2 -->
+  <div id="step2" class="hidden">
+    <h3>Step 2: Feedback questions</h3>
 
-    const SESSION_KEY = "tl360_session_v1";
+    <label>1. This team leader demonstrates effective leadership</label>
+    <div class="likert">
+      <label><input type="radio" name="q1" value="1"> 1</label>
+      <label><input type="radio" name="q1" value="2"> 2</label>
+      <label><input type="radio" name="q1" value="3"> 3</label>
+      <label><input type="radio" name="q1" value="4"> 4</label>
+      <label><input type="radio" name="q1" value="5"> 5</label>
+    </div>
 
-    const scale = [
-      { label: "Never", value: 1 },
-      { label: "Rarely", value: 2 },
-      { label: "Sometimes", value: 3 },
-      { label: "Often", value: 4 },
-      { label: "Always", value: 5 },
-    ];
+    <label>2. Communication is clear and consistent</label>
+    <div class="likert">
+      <label><input type="radio" name="q2" value="1"> 1</label>
+      <label><input type="radio" name="q2" value="2"> 2</label>
+      <label><input type="radio" name="q2" value="3"> 3</label>
+      <label><input type="radio" name="q2" value="4"> 4</label>
+      <label><input type="radio" name="q2" value="5"> 5</label>
+    </div>
 
-    const questions = [
-      { id: "q2", text: "The team leader sets clear expectations and goals." },
-      { id: "q3", text: "The team leader makes fair, well-informed decisions." },
-      { id: "q4", text: "The team leader remains composed and professional under pressure." },
+    <label>Strengths</label>
+    <textarea id="strengthsText"></textarea>
 
-      { id: "q5", text: "The team leader communicates openly and transparently." },
-      { id: "q6", text: "The team leader listens actively and considers feedback." },
-      { id: "q7", text: "The team leader provides timely and useful updates." },
+    <label>Areas for development</label>
+    <textarea id="devText"></textarea>
 
-      { id: "q8", text: "The team leader supports professional growth and development." },
-      { id: "q9", text: "The team leader provides constructive, actionable feedback." },
-      { id: "q10", text: "The team leader acknowledges and recognizes good performance." },
+    <label>Anything else that would help them succeed?</label>
+    <textarea id="otherText"></textarea>
 
-      { id: "q11", text: "The team leader promotes a positive and respectful team culture." },
-      { id: "q12", text: "The team leader encourages collaboration and teamwork." },
-      { id: "q13", text: "The team leader manages conflicts effectively and professionally." },
+    <div id="submitErr" class="error"></div>
+    <div id="submitOk" class="ok"></div>
 
-      { id: "q14", text: "The team leader ensures tasks and commitments are completed on time." },
-      { id: "q15", text: "The team leader holds themselves and others accountable." },
-      { id: "q16", text: "The team leader effectively prioritizes and delegates tasks." },
-    ];
+    <div class="actions">
+      <button id="submitBtn">Submit feedback</button>
+      <button id="restartBtn" class="secondary">Start over</button>
+    </div>
+  </div>
+</div>
 
-    function show(el, yes) { el.style.display = yes ? "block" : "none"; }
-    function setErr(el, msg) { el.textContent = msg || ""; show(el, !!msg); }
-    function setOk(el, msg) { el.textContent = msg || ""; show(el, !!msg); }
+<script>
+const API = "";
 
-    function renderQuestion(q) {
-      const wrap = document.getElementById(q.id);
-      wrap.innerHTML = "";
-
-      const title = document.createElement("label");
-      title.className = "title";
-      title.textContent = q.text;
-
-      const radios = document.createElement("div");
-      radios.className = "radios";
-
-      for (const opt of scale) {
-        const lbl = document.createElement("label");
-
-        const input = document.createElement("input");
-        input.type = "radio";
-        input.name = q.id;
-        input.value = opt.value;
-        input.required = true;
-
-        const span = document.createElement("span");
-        span.textContent = opt.label;
-
-        lbl.appendChild(input);
-        lbl.appendChild(span);
-        radios.appendChild(lbl);
-      }
-
-      wrap.appendChild(title);
-      wrap.appendChild(radios);
-    }
-
-    questions.forEach(renderQuestion);
-
-    const step1 = document.getElementById("step1");
-    const step2 = document.getElementById("step2");
-
-    const codeInput = document.getElementById("codeInput");
-    const startBtn = document.getElementById("startBtn");
-    const step1Err = document.getElementById("step1Err");
-    const step1Ok = document.getElementById("step1Ok");
-
-    const submitErr = document.getElementById("submitErr");
-    const submitOk = document.getElementById("submitOk");
-    const submitBtn = document.getElementById("submitBtn");
-    const restartBtn = document.getElementById("restartBtn");
-    const sessionNote = document.getElementById("sessionNote");
-
-    function clearSession() {
-      localStorage.removeItem(SESSION_KEY);
-    }
-
-    function loadSession() {
-      try {
-        const raw = localStorage.getItem(SESSION_KEY);
-        if (!raw) return null;
-        const s = JSON.parse(raw);
-
-        // Soft expiry: 24 hours (prevents the “session expired” frustration)
-        const ageMs = Date.now() - (s.startedAt || 0);
-        if (ageMs > 24 * 60 * 60 * 1000) {
-          clearSession();
-          return null;
-        }
-        return s;
-      } catch {
-        clearSession();
-        return null;
-      }
-    }
-
-    function saveSession(session) {
-      localStorage.setItem(SESSION_KEY, JSON.stringify(session));
-    }
-
-    function goToStep2(session) {
-      show(step1, false);
-      show(step2, true);
-      setErr(step1Err, "");
-      setOk(step1Ok, "");
-      setErr(submitErr, "");
-      setOk(submitOk, "");
-      sessionNote.textContent = session?.campaignId ? `Code verified. (Cycle stored silently: ${session.campaignId})` : "";
-    }
-
-    function goToStep1() {
-      show(step2, false);
-      show(step1, true);
-      setErr(submitErr, "");
-      setOk(submitOk, "");
-      codeInput.value = "";
-    }
-
-    // Resume if user refreshes mid-form
-    const existing = loadSession();
-if (existing && existing.sessionToken) {
-  gotoStep2(existing);
-} else {
-  clearSession();
-show(step2, false);
-show(step1, true);
-setErr(step1Err, "");
-setErr(submitErr, "");
+function show(id) {
+  document.getElementById(id).classList.remove("hidden");
+}
+function hide(id) {
+  document.getElementById(id).classList.add("hidden");
+}
+function err(id, msg) {
+  document.getElementById(id).textContent = msg || "";
+}
+function ok(id, msg) {
+  document.getElementById(id).textContent = msg || "";
 }
 
+function saveSession(token) {
+  localStorage.setItem("feedbackSession", JSON.stringify({
+    token,
+    startedAt: Date.now()
+  }));
+}
+function loadSession() {
+  try {
+    return JSON.parse(localStorage.getItem("feedbackSession"));
+  } catch {
+    return null;
+  }
+}
+function clearSession() {
+  localStorage.removeItem("feedbackSession");
+}
 
-    startBtn.addEventListener("click", async () => {
-      const code = (codeInput.value || "").trim().toUpperCase();
-      setErr(step1Err, "");
-      setOk(step1Ok, "");
+document.getElementById("startBtn").onclick = async () => {
+  err("step1Err"); ok("step1Ok");
 
-      if (!code) return setErr(step1Err, "Please enter a code.");
+  const code = document.getElementById("codeInput").value.trim().toUpperCase();
+  if (!code) return err("step1Err", "Please enter a code.");
 
-      startBtn.disabled = true;
-      startBtn.textContent = "Checking…";
+  const btn = document.getElementById("startBtn");
+  btn.disabled = true; btn.textContent = "Checking…";
 
-      try {
-        const res = await fetch(API + "/api/start-session", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ code })
-        });
+  try {
+    const res = await fetch("/api/start-session", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code })
+    });
+    const data = await res.json();
 
-        const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.sessionToken) {
+      btn.disabled = false; btn.textContent = "Start feedback";
+      return err("step1Err", data.error || "Invalid code.");
+    }
 
-        if (!res.ok) {
-          startBtn.disabled = false;
-          startBtn.textContent = "Start";
-          return setErr(step1Err, data.error || "Unable to start. Please check your code.");
-        }
+    saveSession(data.sessionToken);
+    ok("step1Ok", "Code accepted. Loading questions…");
 
-        const session = {
-  sessionToken: data.sessionToken,   // ✅ THIS IS NOW REQUIRED
-  startedAt: Date.now()
+    hide("step1");
+    show("step2");
+
+  } catch (e) {
+    err("step1Err", "Server error. Please try again.");
+  } finally {
+    btn.disabled = false; btn.textContent = "Start feedback";
+  }
 };
-saveSession(session);
-if (!data.sessionToken) {
-  startBtn.disabled = false;
-  startBtn.textContent = "Start";
-  return setErr(step1Err, "Server did not return a session token. Please try again.");
-}
 
+document.getElementById("submitBtn").onclick = async () => {
+  err("submitErr"); ok("submitOk");
 
-        setOk(step1Ok, "Code accepted. Loading questionnaire…");
-        goToStep2(session);
+  const session = loadSession();
+  if (!session?.token) {
+    return err("submitErr", "Your session is missing. Please start over.");
+  }
 
-        startBtn.disabled = false;
-        startBtn.textContent = "Start";
-      } catch (e) {
-        console.error(e);
-        startBtn.disabled = false;
-        startBtn.textContent = "Start";
-        setErr(step1Err, "Network error. Please try again.");
-      }
+  const q1 = document.querySelector("input[name='q1']:checked")?.value;
+  const q2 = document.querySelector("input[name='q2']:checked")?.value;
+  const strengthsText = document.getElementById("strengthsText").value.trim();
+  const devText = document.getElementById("devText").value.trim();
+  const otherText = document.getElementById("otherText").value.trim();
+
+  if (!q1 || !q2 || !strengthsText || !devText) {
+    return err("submitErr", "Please answer all required questions.");
+  }
+
+  const scores = { q1: Number(q1), q2: Number(q2) };
+
+  const btn = document.getElementById("submitBtn");
+  btn.disabled = true; btn.textContent = "Submitting…";
+
+  try {
+    const res = await fetch("/api/submit-feedback", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + session.token
+      },
+      body: JSON.stringify({
+        scores,
+        strengthsText,
+        devText,
+        otherText
+      })
     });
 
-    restartBtn.addEventListener("click", () => {
-      clearSession();
-      goToStep1();
-      show(step1Ok, false);
-      show(step1Err, false);
-      // reset form fields
-      step2.reset();
-    });
+    const data = await res.json();
 
-    step2.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      setErr(submitErr, "");
-      setOk(submitOk, "");
+    if (!res.ok) {
+      btn.disabled = false; btn.textContent = "Submit feedback";
+      return err("submitErr", data.error || "Submission failed.");
+    }
 
-      const session = loadSession();
-      if (!session || !session.code || !session.campaignId || !session.teamLeaderId) {
-        // This is the main fix: avoid vague “expired”; tell user exactly what to do.
-        return setErr(submitErr, "Your session is missing. Please click “Start over” and re-enter your code.");
-      }
+    ok("submitOk", "Thank you — your feedback has been submitted.");
+    clearSession();
+    btn.disabled = true;
 
-      // Collect scores
-      const scores = {};
-      for (const q of questions) {
-        const checked = step2.querySelector(`input[name="${q.id}"]:checked`);
-        if (!checked) return setErr(submitErr, "Please answer every question before submitting.");
-        scores[q.id] = Number(checked.value);
-      }
+  } catch (e) {
+    err("submitErr", "Server error saving feedback.");
+    btn.disabled = false;
+  }
+};
 
-      // Text areas are required
-      const strengthsText = document.getElementById("strengthsText").value.trim();
-      const devText = document.getElementById("devText").value.trim();
-      const otherText = document.getElementById("otherText").value.trim();
+document.getElementById("restartBtn").onclick = () => {
+  clearSession();
+  location.reload();
+};
+</script>
 
-      if (!strengthsText || !devText || !otherText) {
-        return setErr(submitErr, "Please complete all written questions before submitting.");
-      }
-
-      submitBtn.disabled = true;
-      submitBtn.textContent = "Submitting…";
-
-      try {
-        const res = await fetch(API + "/api/submit-feedback", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-    sessionToken: session.sessionToken,   // ✅ REQUIRED
-    scores,
-    strengthsText,
-    devText,
-    otherText
-  })
-});
-
-
-        const data = await res.json().catch(() => ({}));
-
-        if (!res.ok) {
-          submitBtn.disabled = false;
-          submitBtn.textContent = "Submit feedback";
-          return setErr(submitErr, data.error || "Unable to submit feedback. Please try again.");
-        }
-
-        setOk(submitOk, "Thanks — your feedback has been submitted successfully.");
-        clearSession();
-        submitBtn.disabled = false;
-        submitBtn.textContent = "Submit feedback";
-
-        // Disable form after submit
-        Array.from(step2.querySelectorAll("input, textarea, button")).forEach(el => {
-          if (el.id !== "restartBtn") el.disabled = true;
-        });
-      } catch (err) {
-        console.error(err);
-        submitBtn.disabled = false;
-        submitBtn.textContent = "Submit feedback";
-        setErr(submitErr, "Network error while submitting. Please try again.");
-      }
-    });
-  </script>
 </body>
 </html>
