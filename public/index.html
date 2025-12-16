@@ -206,7 +206,7 @@
 
   <script>
     // IMPORTANT: if hosted on same domain, use relative paths
-    const API = ""; // keep blank to call same-origin, e.g. /api/start
+    const API = ""; // keep blank to call same-origin, e.g. /api/start-session
 
     const SESSION_KEY = "tl360_session_v1";
 
@@ -354,7 +354,7 @@
       startBtn.textContent = "Checking…";
 
       try {
-        const res = await fetch(API + "/api/start", {
+        const res = await fetch(API + "/api/start-session", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ code })
