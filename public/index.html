@@ -1,257 +1,348 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Anonymous Team Leader Feedback</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Anonymous TL Feedback</title>
   <style>
-    body {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #f4f4f5;
-      margin: 0;
-      padding: 2rem;
+    body{
+      font-family: system-ui, -apple-system, Segoe UI, sans-serif;
+      background:#f4f4f5;
+      margin:0;
+      padding:24px 16px;
+      color:#0f172a;
     }
-    .card {
-      max-width: 720px;
-      margin: 0 auto;
-      background: #fff;
-      border-radius: 12px;
-      padding: 1.8rem 2.2rem;
-      box-shadow: 0 20px 40px rgba(0,0,0,0.12);
+    .shell{
+      max-width:720px;
+      margin:0 auto;
+      background:#fff;
+      border-radius:12px;
+      padding:18px 20px;
+      box-shadow:0 18px 40px rgba(15,23,42,0.12);
+      border:1px solid #e5e7eb;
     }
-    h1 { margin-top: 0; }
-    .muted { color: #6b7280; font-size: 0.9rem; }
-    label { font-weight: 600; display: block; margin-top: 1rem; }
-    input, textarea {
-      width: 100%;
-      padding: 0.55rem;
-      margin-top: 0.3rem;
-      border-radius: 6px;
-      border: 1px solid #d4d4d8;
-      font-size: 0.95rem;
+    h1{ margin:0 0 8px 0; }
+    .muted{ color:#64748b; font-size:0.95rem; margin:0 0 14px 0; }
+    .card{
+      border:1px solid #e5e7eb;
+      border-radius:12px;
+      padding:14px;
+      background:#f9fafb;
+      margin-top:14px;
     }
-    textarea { min-height: 90px; }
-    button {
-      margin-top: 1.2rem;
-      padding: 0.55rem 1.2rem;
-      border-radius: 6px;
-      border: none;
-      background: #2563eb;
-      color: white;
-      font-size: 0.95rem;
-      cursor: pointer;
+    label{ font-weight:650; display:block; margin:12px 0 6px; }
+    input[type="text"], textarea{
+      width:100%;
+      padding:10px 12px;
+      border-radius:10px;
+      border:1px solid #d1d5db;
+      font-size:1rem;
+      box-sizing:border-box;
+      background:#fff;
     }
-    button.secondary {
-      background: #e5e7eb;
-      color: #111827;
+    textarea{ min-height:90px; resize:vertical; }
+    .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    button{
+      padding:10px 14px;
+      border-radius:10px;
+      border:none;
+      background:#2563eb;
+      color:#fff;
+      font-weight:650;
+      cursor:pointer;
     }
-    button:disabled {
-      background: #9ca3af;
-      cursor: not-allowed;
+    button.secondary{ background:#e5e7eb; color:#111827; }
+    button:disabled{ opacity:0.6; cursor:not-allowed; }
+    .err{
+      margin-top:10px;
+      background:#fef2f2;
+      color:#b91c1c;
+      border:1px solid #fecaca;
+      padding:10px 12px;
+      border-radius:10px;
+      display:none;
+      white-space:pre-wrap;
     }
-    .error { color: #b91c1c; margin-top: 0.6rem; }
-    .ok { color: #047857; margin-top: 0.6rem; }
-    .hidden { display: none; }
-    .likert label {
-      display: inline-block;
-      margin-right: 0.8rem;
-      font-weight: normal;
+    .ok{
+      margin-top:10px;
+      background:#ecfdf5;
+      color:#065f46;
+      border:1px solid #a7f3d0;
+      padding:10px 12px;
+      border-radius:10px;
+      display:none;
+      white-space:pre-wrap;
     }
-    .actions {
-      display: flex;
-      gap: 0.6rem;
-      margin-top: 1rem;
+    .likert{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top:6px;
+    }
+    .pill{
+      border:1px solid #e5e7eb;
+      background:#fff;
+      border-radius:999px;
+      padding:6px 10px;
+      display:flex;
+      align-items:center;
+      gap:8px;
+      cursor:pointer;
+      user-select:none;
+    }
+    .footer{
+      display:flex;
+      gap:10px;
+      justify-content:flex-end;
+      flex-wrap:wrap;
+      margin-top:14px;
     }
   </style>
 </head>
 <body>
+  <div class="shell">
+    <h1>Anonymous TL Feedback</h1>
+    <p class="muted">
+      Minimal test version. This proves code → session token → submit → saved works.
+    </p>
 
-<div class="card">
-  <h1>Team Leader Feedback</h1>
-  <p class="muted">
-    Your feedback is anonymous. Please focus on behaviours and experiences rather than names or specific incidents.
-  </p>
+    <!-- STEP 1 -->
+    <div id="step1" class="card">
+      <h2 style="margin:0 0 6px 0; font-size:1.1rem;">Step 1: Enter code</h2>
+      <p class="muted" style="margin:0 0 10px 0;">Enter your one-time feedback code.</p>
 
-  <!-- STEP 1 -->
-  <div id="step1">
-    <h3>Step 1: Enter your feedback code</h3>
-    <label>Feedback code</label>
-    <input id="codeInput" placeholder="e.g. ABCD-1234" />
-    <div id="step1Err" class="error"></div>
-    <div id="step1Ok" class="ok"></div>
-    <button id="startBtn">Start feedback</button>
-  </div>
+      <div class="row">
+        <input id="codeInput" type="text" placeholder="e.g. ABCD-1234" autocomplete="off" />
+        <button id="startBtn" type="button">Start</button>
+      </div>
 
-  <!-- STEP 2 -->
-  <div id="step2" class="hidden">
-    <h3>Step 2: Feedback questions</h3>
-
-    <label>1. This team leader demonstrates effective leadership</label>
-    <div class="likert">
-      <label><input type="radio" name="q1" value="1"> 1</label>
-      <label><input type="radio" name="q1" value="2"> 2</label>
-      <label><input type="radio" name="q1" value="3"> 3</label>
-      <label><input type="radio" name="q1" value="4"> 4</label>
-      <label><input type="radio" name="q1" value="5"> 5</label>
+      <div id="step1Err" class="err"></div>
+      <div id="step1Ok" class="ok"></div>
     </div>
 
-    <label>2. Communication is clear and consistent</label>
-    <div class="likert">
-      <label><input type="radio" name="q2" value="1"> 1</label>
-      <label><input type="radio" name="q2" value="2"> 2</label>
-      <label><input type="radio" name="q2" value="3"> 3</label>
-      <label><input type="radio" name="q2" value="4"> 4</label>
-      <label><input type="radio" name="q2" value="5"> 5</label>
-    </div>
+    <!-- STEP 2 -->
+    <div id="step2" class="card" style="display:none;">
+      <h2 style="margin:0 0 6px 0; font-size:1.1rem;">Step 2: Quick questions</h2>
+      <p class="muted" style="margin:0 0 10px 0;">All fields required.</p>
 
-    <label>Strengths</label>
-    <textarea id="strengthsText"></textarea>
+      <div id="qMount"></div>
 
-    <label>Areas for development</label>
-    <textarea id="devText"></textarea>
+      <label for="commentText">One short comment (anonymous)</label>
+      <textarea id="commentText" placeholder="Keep it general – avoid names or unique incidents."></textarea>
 
-    <label>Anything else that would help them succeed?</label>
-    <textarea id="otherText"></textarea>
+      <div id="submitErr" class="err"></div>
+      <div id="submitOk" class="ok"></div>
 
-    <div id="submitErr" class="error"></div>
-    <div id="submitOk" class="ok"></div>
-
-    <div class="actions">
-      <button id="submitBtn">Submit feedback</button>
-      <button id="restartBtn" class="secondary">Start over</button>
+      <div class="footer">
+        <button id="restartBtn" class="secondary" type="button">Start over</button>
+        <button id="submitBtn" type="button">Submit</button>
+      </div>
     </div>
   </div>
-</div>
 
-<script>
-const API = "";
+  <script>
+    const API = ""; // same origin
+    const SESSION_KEY = "tl360_session_min";
 
-function show(id) {
-  document.getElementById(id).classList.remove("hidden");
-}
-function hide(id) {
-  document.getElementById(id).classList.add("hidden");
-}
-function err(id, msg) {
-  document.getElementById(id).textContent = msg || "";
-}
-function ok(id, msg) {
-  document.getElementById(id).textContent = msg || "";
-}
+    const questions = [
+      { id: "q2", text: "Sets clear expectations and goals" },
+      { id: "q5", text: "Communicates openly and transparently" },
+      { id: "q14", text: "Ensures tasks and commitments are completed on time" }
+    ];
 
-function saveSession(token) {
-  localStorage.setItem("feedbackSession", JSON.stringify({
-    token,
-    startedAt: Date.now()
-  }));
-}
-function loadSession() {
-  try {
-    return JSON.parse(localStorage.getItem("feedbackSession"));
-  } catch {
-    return null;
-  }
-}
-function clearSession() {
-  localStorage.removeItem("feedbackSession");
-}
+    const $ = (id) => document.getElementById(id);
+    function show(el, on){ el.style.display = on ? "" : "none"; }
+    function setErr(el, msg){ el.textContent = msg || ""; el.style.display = msg ? "block" : "none"; }
+    function setOk(el, msg){ el.textContent = msg || ""; el.style.display = msg ? "block" : "none"; }
 
-document.getElementById("startBtn").onclick = async () => {
-  err("step1Err"); ok("step1Ok");
-
-  const code = document.getElementById("codeInput").value.trim().toUpperCase();
-  if (!code) return err("step1Err", "Please enter a code.");
-
-  const btn = document.getElementById("startBtn");
-  btn.disabled = true; btn.textContent = "Checking…";
-
-  try {
-    const res = await fetch("/api/start-session", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code })
-    });
-    const data = await res.json();
-
-    if (!res.ok || !data.sessionToken) {
-      btn.disabled = false; btn.textContent = "Start feedback";
-      return err("step1Err", data.error || "Invalid code.");
+    function saveSession(token){
+      localStorage.setItem(SESSION_KEY, JSON.stringify({ token, startedAt: Date.now() }));
+    }
+    function loadSession(){
+      try { return JSON.parse(localStorage.getItem(SESSION_KEY) || "null"); }
+      catch { return null; }
+    }
+    function clearSession(){
+      localStorage.removeItem(SESSION_KEY);
     }
 
-    saveSession(data.sessionToken);
-    ok("step1Ok", "Code accepted. Loading questions…");
+    function renderQuestions(){
+      const mount = $("qMount");
+      mount.innerHTML = "";
+      questions.forEach(q => {
+        const wrap = document.createElement("div");
+        wrap.style.border = "1px solid #e5e7eb";
+        wrap.style.background = "#fff";
+        wrap.style.borderRadius = "12px";
+        wrap.style.padding = "12px";
+        wrap.style.marginTop = "10px";
 
-    hide("step1");
-    show("step2");
+        const title = document.createElement("div");
+        title.textContent = q.text;
+        title.style.fontWeight = "650";
+        title.style.marginBottom = "8px";
 
-  } catch (e) {
-    err("step1Err", "Server error. Please try again.");
-  } finally {
-    btn.disabled = false; btn.textContent = "Start feedback";
-  }
-};
+        const choices = document.createElement("div");
+        choices.className = "likert";
 
-document.getElementById("submitBtn").onclick = async () => {
-  err("submitErr"); ok("submitOk");
+        for (let v = 1; v <= 5; v++){
+          const lbl = document.createElement("label");
+          lbl.className = "pill";
 
-  const session = loadSession();
-  if (!session?.token) {
-    return err("submitErr", "Your session is missing. Please start over.");
-  }
+          const input = document.createElement("input");
+          input.type = "radio";
+          input.name = q.id;
+          input.value = String(v);
 
-  const q1 = document.querySelector("input[name='q1']:checked")?.value;
-  const q2 = document.querySelector("input[name='q2']:checked")?.value;
-  const strengthsText = document.getElementById("strengthsText").value.trim();
-  const devText = document.getElementById("devText").value.trim();
-  const otherText = document.getElementById("otherText").value.trim();
+          const span = document.createElement("span");
+          span.textContent = String(v);
 
-  if (!q1 || !q2 || !strengthsText || !devText) {
-    return err("submitErr", "Please answer all required questions.");
-  }
+          lbl.appendChild(input);
+          lbl.appendChild(span);
+          choices.appendChild(lbl);
+        }
 
-  const scores = { q1: Number(q1), q2: Number(q2) };
+        wrap.appendChild(title);
+        wrap.appendChild(choices);
+        mount.appendChild(wrap);
+      });
+    }
+    renderQuestions();
 
-  const btn = document.getElementById("submitBtn");
-  btn.disabled = true; btn.textContent = "Submitting…";
-
-  try {
-    const res = await fetch("/api/submit-feedback", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer " + session.token
-      },
-      body: JSON.stringify({
-        scores,
-        strengthsText,
-        devText,
-        otherText
-      })
-    });
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      btn.disabled = false; btn.textContent = "Submit feedback";
-      return err("submitErr", data.error || "Submission failed.");
+    function goToStep1(){
+      show($("step2"), false);
+      show($("step1"), true);
+      setErr($("step1Err"), "");
+      setOk($("step1Ok"), "");
+      setErr($("submitErr"), "");
+      setOk($("submitOk"), "");
+      $("codeInput").value = "";
     }
 
-    ok("submitOk", "Thank you — your feedback has been submitted.");
-    clearSession();
-    btn.disabled = true;
+    function goToStep2(){
+      show($("step1"), false);
+      show($("step2"), true);
+      setErr($("submitErr"), "");
+      setOk($("submitOk"), "");
+    }
 
-  } catch (e) {
-    err("submitErr", "Server error saving feedback.");
-    btn.disabled = false;
-  }
-};
+    // Resume if token exists
+    const existing = loadSession();
+    if (existing && existing.token){
+      goToStep2();
+    } else {
+      goToStep1();
+    }
 
-document.getElementById("restartBtn").onclick = () => {
-  clearSession();
-  location.reload();
-};
-</script>
+    $("startBtn").addEventListener("click", async () => {
+      setErr($("step1Err"), "");
+      setOk($("step1Ok"), "");
 
+      const code = ($("codeInput").value || "").trim().toUpperCase();
+      if (!code) return setErr($("step1Err"), "Please enter a code.");
+
+      $("startBtn").disabled = true;
+      $("startBtn").textContent = "Checking…";
+
+      try {
+        const res = await fetch(API + "/api/start-session", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code })
+        });
+
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok){
+          return setErr($("step1Err"), data.error || `Server error (${res.status}).`);
+        }
+
+        if (!data.sessionToken){
+          return setErr($("step1Err"), "Missing session token from server. Check /api/start-session.");
+        }
+
+        saveSession(data.sessionToken);
+        setOk($("step1Ok"), "Code accepted.");
+        goToStep2();
+
+      } catch (e) {
+        console.error(e);
+        setErr($("step1Err"), "Network error. Please try again.");
+      } finally {
+        $("startBtn").disabled = false;
+        $("startBtn").textContent = "Start";
+      }
+    });
+
+    $("restartBtn").addEventListener("click", () => {
+      clearSession();
+      // clear radios + comment
+      document.querySelectorAll("input[type=radio]").forEach(r => r.checked = false);
+      $("commentText").value = "";
+      goToStep1();
+    });
+
+    $("submitBtn").addEventListener("click", async () => {
+      setErr($("submitErr"), "");
+      setOk($("submitOk"), "");
+
+      const session = loadSession();
+      if (!session?.token){
+        return setErr($("submitErr"), "Session missing. Click Start over and re-enter your code.");
+      }
+
+      // Collect scores
+      const scores = {};
+      for (const q of questions){
+        const picked = document.querySelector(`input[name="${q.id}"]:checked`);
+        if (!picked) return setErr($("submitErr"), `Please answer: ${q.text}`);
+        scores[q.id] = Number(picked.value);
+      }
+
+      const comment = ($("commentText").value || "").trim();
+      if (!comment) return setErr($("submitErr"), "Please enter a short comment.");
+
+      $("submitBtn").disabled = true;
+      $("submitBtn").textContent = "Submitting…";
+
+      try {
+        const res = await fetch(API + "/api/submit-feedback", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + session.token
+          },
+          body: JSON.stringify({
+            scores,
+            strengthsText: comment,  // map minimal comment into server fields
+            devText: comment,
+            otherText: comment
+          })
+        });
+
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok){
+          return setErr($("submitErr"), data.error || `Server error (${res.status}).`);
+        }
+
+        setOk($("submitOk"), "Submitted successfully. Thank you!");
+        clearSession();
+
+        $("submitBtn").textContent = "Submitted";
+        $("submitBtn").disabled = true;
+
+      } catch (e){
+        console.error(e);
+        setErr($("submitErr"), "Network error submitting feedback.");
+      } finally {
+        // keep disabled if success
+        if ($("submitBtn").textContent !== "Submitted"){
+          $("submitBtn").disabled = false;
+          $("submitBtn").textContent = "Submit";
+        }
+      }
+    });
+  </script>
 </body>
 </html>
