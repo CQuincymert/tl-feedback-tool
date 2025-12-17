@@ -3,363 +3,353 @@
 <head>
   <meta charset="utf-8">
   <title>360° Review – Admin</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <style>
     body {
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       background: #f4f4f5;
       margin: 0;
       padding: 2rem 1rem;
-      color: #111827;
+      color: #0f172a;
     }
     .shell {
-      max-width: 1150px;
+      max-width: 1100px;
       margin: 0 auto;
       background: #fff;
-      border-radius: 14px;
+      border-radius: 12px;
       padding: 1.8rem 2.3rem;
       box-shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
+      border: 1px solid #e5e7eb;
     }
-    h1 { margin: 0 0 0.25rem 0; }
-    h2 { margin-top: 1.6rem; }
-    h3 { margin-top: 1.2rem; }
-    .muted { color: #6b7280; font-size: 0.9rem; }
-    .row { display:flex; gap:0.6rem; align-items:center; flex-wrap:wrap; }
+    h1 { margin-top: 0; }
+    h2 { margin-top: 0; }
+    h3 { margin-bottom: 0.5rem; }
+    h4 { margin-bottom: 0.5rem; margin-top: 1rem; }
+
     select, input[type="text"], input[type="number"], input[type="password"] {
-      padding: 0.45rem 0.6rem;
-      border-radius: 8px;
+      padding: 0.35rem 0.5rem;
+      border-radius: 6px;
       border: 1px solid #d4d4d8;
-      font-size: 0.95rem;
-      background: #fff;
+      margin-right: 0.5rem;
+      font-size: 0.9rem;
     }
     button {
-      padding: 0.48rem 0.9rem;
-      border-radius: 8px;
+      padding: 0.35rem 0.8rem;
+      border-radius: 6px;
       border: none;
       background: #2563eb;
       color: white;
       cursor: pointer;
-      font-size: 0.95rem;
+      font-size: 0.9rem;
       font-weight: 600;
     }
-    button.secondary { background: #e5e7eb; color: #111827; }
-    button.danger { background: #dc2626; }
-    button:hover { filter: brightness(0.95); }
-    hr { margin: 1.6rem 0; border: none; border-top: 1px solid #e5e7eb; }
+    button.secondary {
+      background: #e5e7eb;
+      color: #111827;
+    }
+    button.danger {
+      background: #dc2626;
+    }
+    button:hover:not(.secondary):not(.danger) { background: #1d4ed8; }
+    button.secondary:hover { background: #d4d4d8; }
+    button.danger:hover { background: #b91c1c; }
+
     table {
       border-collapse: collapse;
       width: 100%;
-      margin-top: 0.8rem;
-      font-size: 0.95rem;
+      margin-top: 1rem;
+      font-size: 0.9rem;
     }
     th, td {
       border: 1px solid #e4e4e7;
-      padding: 0.55rem 0.65rem;
+      padding: 0.4rem 0.6rem;
       text-align: left;
       vertical-align: top;
     }
     th { background: #f9fafb; }
+
+    .muted { color: #6b7280; font-size: 0.86rem; }
     .pill {
-      display:inline-block;
-      padding: 0.15rem 0.6rem;
+      display: inline-block;
       border-radius: 999px;
-      font-size: 0.8rem;
+      padding: 0.1rem 0.55rem;
+      font-size: 0.78rem;
       border: 1px solid #d4d4d8;
     }
-    .pill.good { background:#ecfdf5; border-color:#22c55e; color:#15803d; }
-    .pill.mixed { background:#fefce8; border-color:#f97316; color:#92400e; }
-    .pill.bad { background:#fef2f2; border-color:#ef4444; color:#b91c1c; }
-    .layout {
-      display:grid;
-      grid-template-columns: 2.1fr 1.4fr;
-      gap: 1.2rem;
-      align-items:start;
-    }
-    canvas { background:#f9fafb; border-radius: 12px; padding: 0.6rem; border:1px solid #e5e7eb; }
+    .pill.good { background: #ecfdf5; border-color: #22c55e; color: #15803d;}
+    .pill.mixed { background: #fefce8; border-color: #f97316; color: #92400e;}
+    .pill.bad { background: #fef2f2; border-color: #ef4444; color: #b91c1c;}
+    .pill.nodata { background: #f3f4f6; border-color: #d1d5db; color:#374151; }
+
+    .comments { margin-top: 1rem; }
     .comment-block {
       background: #f9fafb;
-      border-radius: 10px;
-      padding: 0.75rem 0.9rem;
-      margin-bottom: 0.6rem;
+      border-radius: 8px;
+      padding: 0.7rem 0.9rem;
+      margin-bottom: 0.5rem;
       border: 1px solid #e5e7eb;
       white-space: pre-wrap;
     }
-    details.settings {
-      border: 1px solid #e5e7eb;
-      border-radius: 12px;
-      padding: 0.9rem 1rem;
-      background: #fafafa;
-      margin-top: 1rem;
+    hr { margin: 1.5rem 0; }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 2fr 1.5fr;
+      gap: 1.5rem;
+      align-items: flex-start;
     }
-    details.settings > summary {
-      cursor: pointer;
-      font-weight: 700;
-      list-style: none;
+    canvas { background: #f9fafb; border-radius: 8px; padding: 0.5rem; border:1px solid #e5e7eb; }
+
+    .aiGrid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 10px;
     }
-    details.settings > summary::-webkit-details-marker { display: none; }
-    .chip {
-      display:inline-flex;
+    .aiBox{
+      border:1px solid #e5e7eb;
+      border-radius: 10px;
+      background:#fafafa;
+      padding: 10px 12px;
+    }
+    .aiHead{
+      display:flex;
       align-items:center;
-      gap:0.4rem;
-      padding: 0.25rem 0.6rem;
-      border: 1px solid #d4d4d8;
-      border-radius: 999px;
-      background: #fff;
-      margin: 0.2rem 0.25rem 0.2rem 0;
-      font-size: 0.9rem;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom:8px;
     }
-    .chip button {
-      padding: 0.1rem 0.45rem;
-      border-radius: 999px;
-      font-size: 0.85rem;
-      background: #e5e7eb;
-      color: #111827;
-    }
-    .chip button.d { background:#fee2e2; color:#991b1b; }
-    .box {
+    .aiHead strong{ font-size:0.95rem; }
+    .aiText{
       background:#fff;
-      border: 1px solid #e5e7eb;
-      border-radius: 12px;
-      padding: 0.9rem 1rem;
-    }
-    pre {
-      margin-top:0.7rem;
-      background:#0b1220;
-      color:#e5e7eb;
-      padding:0.85rem;
-      border-radius:10px;
-      border:1px solid #111827;
-      max-height:240px;
+      border:1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 10px 10px;
+      white-space: pre-wrap;
+      font-size:0.9rem;
+      line-height:1.35;
+      max-height: 260px;
       overflow:auto;
-      font-size: 0.9rem;
+    }
+
+    @media (max-width: 980px){
+      .layout{grid-template-columns: 1fr;}
+      .aiGrid{grid-template-columns: 1fr;}
     }
   </style>
 
+  <!-- Charts & PDF libs from CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
   <div class="shell">
 
-    <div id="login-block" class="box">
+    <!-- LOGIN BLOCK -->
+    <div id="login-block">
       <h1>Admin Login</h1>
       <p class="muted">Enter the admin password to access dashboards and code generation.</p>
-      <div class="row">
-        <input type="password" id="admin-password" placeholder="Admin password" />
-        <button id="login-btn">Login</button>
-      </div>
-      <div id="login-error" class="muted" style="color:#b91c1c; margin-top:0.4rem;"></div>
+      <input type="password" id="admin-password" placeholder="Admin password" />
+      <button id="login-btn">Login</button>
+      <div id="login-error" class="muted" style="color:#b91c1c;"></div>
+      <hr>
     </div>
 
+    <!-- ADMIN CONTENT (hidden until login) -->
     <div id="admin-content" style="display:none;">
+
       <h1>360° Review – Admin Dashboard</h1>
-      <p class="muted">View anonymous summaries, generate codes, manage cycles and team leader list.</p>
+      <p class="muted">Manage review cycles, view anonymous summaries, generate codes and export reports.</p>
 
-      <!-- VIEW CYCLE (main, always visible) -->
-      <div class="box" style="margin-top:1rem;">
-        <h2 style="margin-top:0;">View cycle</h2>
-        <div class="row">
-          <label class="muted">Cycle:</label>
-          <select id="campaign-select" style="min-width:320px;"></select>
-          <button id="refresh-overview">Refresh overview</button>
-          <span class="muted" id="cycle-status"></span>
-        </div>
+      <!-- CREATE CYCLE -->
+      <h2>Create TL review cycle</h2>
+      <p class="muted">Use a simple ID (e.g. <code>2025-360</code>) and a friendly label (e.g. “2025 Team Leader 360 Review”).</p>
+      <div>
+        <label>Cycle ID:
+          <input type="text" id="cycle-id" placeholder="2025-360" />
+        </label>
+        <label>Label:
+          <input type="text" id="cycle-label" placeholder="2025 Team Leader 360 Review" style="width:260px;" />
+        </label>
+        <button id="create-cycle-btn">Create cycle</button>
+        <span id="create-cycle-msg" class="muted"></span>
+      </div>
 
-        <h3>Overview</h3>
-        <table id="overview-table">
-          <thead>
-            <tr>
-              <th style="width:180px;">Team Leader</th>
-              <th style="width:120px;">Responses</th>
-              <th style="width:140px;">Overall avg</th>
-              <th>Summary</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
+      <hr>
 
-        <h3>Detail</h3>
-        <p class="muted" id="detail-intro">Select a team leader from the overview to see detail.</p>
+      <!-- CAMPAIGN SELECTOR -->
+      <h2>View cycle</h2>
+      <div>
+        <label>
+          Cycle:
+          <select id="campaign-select"></select>
+        </label>
+        <button id="refresh-overview">Refresh overview</button>
+        <span class="muted" id="cycle-status" style="margin-left:8px;"></span>
+      </div>
 
-        <div id="detail-block" style="display:none;">
-          <div class="layout">
-            <div>
-              <p><strong id="detail-title"></strong></p>
-              <p class="muted" id="detail-summary-text"></p>
+      <!-- OVERVIEW TABLE -->
+      <h3>Overview</h3>
+      <table id="overview-table">
+        <thead>
+          <tr>
+            <th>Team Leader</th>
+            <th>Responses</th>
+            <th>Overall avg</th>
+            <th>Summary</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
 
-              <div class="row" style="margin:0.6rem 0 0.6rem;">
-                <button id="ai-summary-btn">Generate AI summary of comments</button>
-                <button id="pdf-btn" class="secondary">Download PDF report</button>
-                <button id="delete-responses-btn" class="danger">Delete responses (TL in this cycle)</button>
-              </div>
+      <!-- DETAIL VIEW -->
+      <h3>Detail</h3>
+      <p class="muted" id="detail-intro">Select a team leader from the overview to see detail.</p>
 
-              <p class="muted" id="ai-summary-text" style="margin-top:0.3rem;"></p>
+      <div id="detail-block" style="display:none;">
+        <div class="layout">
+          <div>
+            <p><strong id="detail-title"></strong></p>
+            <p class="muted" id="detail-summary-text"></p>
 
-              <h4>Action areas (simple)</h4>
-              <div id="action-areas" class="muted"></div>
-
-              <h4>Category scores</h4>
-              <table id="category-table">
-                <thead>
-                  <tr>
-                    <th>Category</th>
-                    <th>Avg score</th>
-                    <th>Interpretation</th>
-                  </tr>
-                </thead>
-                <tbody></tbody>
-              </table>
-
-              <div id="comments-section" style="margin-top:1rem;"></div>
-
-              <h4 style="margin-top:1.2rem;">Compare cycles (any two)</h4>
-              <div class="row">
-                <label class="muted">From:</label>
-                <select id="cmp-from" style="min-width:220px;"></select>
-                <label class="muted">To:</label>
-                <select id="cmp-to" style="min-width:220px;"></select>
-                <button id="cmp-btn" class="secondary">Compare</button>
-                <label class="muted" style="display:flex; align-items:center; gap:0.4rem;">
-                  <input type="checkbox" id="cmp-ai" />
-                  AI change summary
-                </label>
-              </div>
-              <div id="cmp-out" class="muted" style="margin-top:0.6rem;"></div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap; margin:10px 0;">
+              <button id="ai-summary-btn">Generate AI summaries</button>
+              <button id="pdf-btn" class="secondary">Download PDF report</button>
+              <button id="delete-responses-btn" class="danger">Delete all responses for this TL in this cycle</button>
             </div>
 
-            <div>
-              <h4>Charts</h4>
-              <canvas id="radarChart" height="220"></canvas>
-              <canvas id="barChart" height="220" style="margin-top:1rem;"></canvas>
+            <!-- AI summaries (Manager + TL) -->
+            <div class="aiGrid">
+              <div class="aiBox">
+                <div class="aiHead">
+                  <strong>AI summary (manager actions)</strong>
+                  <span class="muted" id="ai-status"></span>
+                </div>
+                <div id="ai-manager" class="aiText"></div>
+              </div>
+
+              <div class="aiBox">
+                <div class="aiHead">
+                  <strong>AI summary (message to TL)</strong>
+                </div>
+                <div id="ai-tl" class="aiText"></div>
+              </div>
             </div>
+
+            <h4>Category scores</h4>
+            <table id="category-table">
+              <thead>
+                <tr>
+                  <th>Category</th>
+                  <th>Avg score</th>
+                  <th>Interpretation</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+
+            <div id="comments-section" class="comments"></div>
+          </div>
+
+          <div>
+            <h4>Charts</h4>
+            <canvas id="radarChart" height="220"></canvas>
+            <canvas id="barChart" height="220" style="margin-top:1rem;"></canvas>
           </div>
         </div>
       </div>
 
-      <!-- SETTINGS DROPDOWN -->
-      <details class="settings">
-        <summary>Settings</summary>
-
-        <div style="margin-top:0.9rem;" class="box">
-          <h2 style="margin-top:0;">Generate passcodes</h2>
-          <p class="muted">Generate anonymous codes for a specific TL and cycle.</p>
-
-          <div class="row">
-            <label class="muted">Cycle:</label>
-            <select id="gen-campaign" style="min-width:320px;"></select>
-
-            <label class="muted">Team Leader:</label>
-            <select id="gen-tl" style="min-width:220px;"></select>
-
-            <label class="muted">Count:</label>
-            <input type="number" id="gen-count" min="1" max="500" value="10" style="width:90px;" />
-
-            <button id="gen-btn">Generate codes</button>
-          </div>
-
-          <pre id="gen-output"></pre>
-        </div>
-
-        <div style="margin-top:1rem;" class="box">
-          <h2 style="margin-top:0;">Create / delete review cycle</h2>
-          <p class="muted">Cycle ID should be consistent (e.g. <code>2025-360</code>) to avoid variations.</p>
-          <div class="row">
-            <label class="muted">Cycle ID:</label>
-            <input type="text" id="cycle-id" placeholder="2025-360" />
-
-            <label class="muted">Label:</label>
-            <input type="text" id="cycle-label" placeholder="2025 Team Leader 360 Review" style="min-width:320px;" />
-
-            <button id="create-cycle-btn">Create cycle</button>
-            <button id="delete-cycle-btn" class="danger">Delete selected cycle</button>
-          </div>
-          <div id="cycle-msg" class="muted" style="margin-top:0.4rem;"></div>
-        </div>
-
-        <div style="margin-top:1rem;" class="box">
-          <h2 style="margin-top:0;">Team leaders</h2>
-          <p class="muted">Manage the list of team leaders used for passcodes and reporting. Names are never shown to reviewers.</p>
-
-          <div id="tl-chips" style="margin-top:0.4rem;"></div>
-
-          <div class="row" style="margin-top:0.7rem;">
-            <label class="muted">New / reactivate TL:</label>
-            <input type="text" id="new-tl" placeholder="e.g. Gill" />
-            <button id="save-tl-btn">Save</button>
-          </div>
-          <div class="muted" id="tl-msg" style="margin-top:0.4rem;"></div>
-        </div>
-      </details>
-
       <hr>
-      <p class="muted">Tip: If you’re testing, use “Delete responses (TL in this cycle)” so the overview isn’t skewed.</p>
+
+      <!-- CODE GENERATOR -->
+      <h2>Generate passcodes</h2>
+      <p class="muted">Generate anonymous codes for a specific TL and cycle.</p>
+
+      <div>
+        <label>Cycle ID:
+          <input type="text" id="gen-campaign" placeholder="e.g. 2025-360" />
+        </label>
+        <label>Team Leader ID:
+          <input type="text" id="gen-tl" placeholder="e.g. Gill" />
+        </label>
+        <label>Count:
+          <input type="number" id="gen-count" min="1" max="500" value="10" />
+        </label>
+        <button id="gen-btn">Generate codes</button>
+      </div>
+
+      <pre id="gen-output"
+           style="margin-top:0.7rem; background:#f9fafb; padding:0.7rem;
+                  border-radius:6px; border:1px solid #e5e7eb;
+                  max-height:200px; overflow:auto;"></pre>
+
     </div>
   </div>
 
   <script>
-    const API_BASE = ""; // same origin (Render). For local, also fine.
+    const API_BASE = ""; // same origin on Render
 
+    // ADMIN AUTH
     let adminKey = null;
-    const authHeaders = () => adminKey ? { "x-admin-key": adminKey } : {};
-
-    let radarChart = null;
-    let barChart = null;
-
-    let currentCampaignId = null;
-    let currentTLId = null;
-    let lastDetailData = null;
-    let allCampaigns = [];
-    let allTLs = [];
-
-    function pillFor(score) {
-      if (score == null || isNaN(score)) return { text: "No data", cls: "" };
-      if (score >= 4.25) return { text: "Very strong", cls: "good" };
-      if (score >= 3.75) return { text: "Strong", cls: "good" };
-      if (score >= 3.25) return { text: "Generally positive", cls: "mixed" };
-      if (score >= 3.0) return { text: "Mixed", cls: "mixed" };
-      return { text: "Needs improvement", cls: "bad" };
+    function authHeaders() {
+      return adminKey ? { "x-admin-key": adminKey } : {};
     }
+
+    // Interpretation helper
+    function interpretScore(score) {
+      if (score == null || isNaN(score)) return { label: "No data", class: "nodata" };
+      if (score >= 4.25) return { label: "Very strong", class: "good" };
+      if (score >= 3.75) return { label: "Strong", class: "good" };
+      if (score >= 3.25) return { label: "Generally positive", class: "mixed" };
+      if (score >= 3.0) return { label: "Mixed", class: "mixed" };
+      return { label: "Needs improvement", class: "bad" };
+    }
+
+    // QUESTION GROUPS (must match server.js)
+    const questionGroups = {
+      "Leadership & Management": ["q1", "q2", "q3"],
+      "Communication": ["q4", "q5", "q6"],
+      "Team Support & Development": ["q7", "q8", "q9"],
+      "Collaboration & Culture": ["q10", "q11", "q12"],
+      "Execution & Accountability": ["q13", "q14", "q15"]
+    };
 
     async function attemptLogin() {
       const pwd = document.getElementById("admin-password").value;
       const errEl = document.getElementById("login-error");
       errEl.textContent = "";
 
-      if (!pwd) { errEl.textContent = "Enter the admin password."; return; }
+      if (!pwd) {
+        errEl.textContent = "Enter the admin password.";
+        return;
+      }
       adminKey = pwd;
 
-      const res = await fetch(API_BASE + "/api/admin/campaigns", { headers: authHeaders() });
+      const res = await fetch(API_BASE + "/api/admin/campaigns", {
+        headers: authHeaders()
+      });
+
       if (!res.ok) {
         adminKey = null;
         errEl.textContent = "Incorrect password or server not configured.";
         return;
       }
 
+      const data = await res.json();
+      populateCampaignSelection(data.campaigns || []);
+
       document.getElementById("login-block").style.display = "none";
       document.getElementById("admin-content").style.display = "block";
 
-      await refreshAllLists();
       await loadOverview();
     }
 
     document.getElementById("login-btn").addEventListener("click", attemptLogin);
 
-    async function refreshAllLists() {
-      allCampaigns = await fetchCampaigns();
-      allTLs = await fetchTeamLeaders();
-
-      populateCampaignDropdown(document.getElementById("campaign-select"), allCampaigns);
-      populateCampaignDropdown(document.getElementById("gen-campaign"), allCampaigns);
-      populateCampaignDropdown(document.getElementById("cmp-from"), allCampaigns);
-      populateCampaignDropdown(document.getElementById("cmp-to"), allCampaigns);
-
-      populateTLDropdown(document.getElementById("gen-tl"), allTLs.filter(t => t.active));
-      renderTLChips(allTLs);
-    }
-
-    function populateCampaignDropdown(sel, campaigns) {
+    function populateCampaignSelection(campaigns) {
+      const sel = document.getElementById("campaign-select");
       sel.innerHTML = "";
-      if (!campaigns || !campaigns.length) {
+      if (!campaigns.length) {
         const opt = document.createElement("option");
         opt.value = "";
         opt.textContent = "No cycles yet";
@@ -368,193 +358,78 @@
       }
       campaigns.forEach(c => {
         const opt = document.createElement("option");
-        opt.value = c.id; // IMPORTANT: campaign id only
-        opt.textContent = `${c.label} (${c.id})`;
+        opt.value = c.id;
+        opt.textContent = c.label + " (" + c.id + ")";
         sel.appendChild(opt);
       });
-    }
 
-    function populateTLDropdown(sel, tls) {
-      sel.innerHTML = "";
-      if (!tls || !tls.length) {
-        const opt = document.createElement("option");
-        opt.value = "";
-        opt.textContent = "No active TLs";
-        sel.appendChild(opt);
-        return;
-      }
-      tls.forEach(t => {
-        const opt = document.createElement("option");
-        opt.value = t.id;
-        opt.textContent = t.id;
-        sel.appendChild(opt);
-      });
-    }
-
-    function renderTLChips(tls) {
-      const wrap = document.getElementById("tl-chips");
-      wrap.innerHTML = "";
-
-      tls.forEach(t => {
-        const chip = document.createElement("div");
-        chip.className = "chip";
-        chip.innerHTML = `
-          <strong>${t.id}</strong>
-          <span class="muted">${t.active ? "(active)" : "(inactive)"}</span>
-        `;
-
-        const btnToggle = document.createElement("button");
-        btnToggle.textContent = t.active ? "Deactivate" : "Reactivate";
-        btnToggle.addEventListener("click", async () => {
-          if (t.active) {
-            await deactivateTL(t.id);
-          } else {
-            await addOrReactivateTL(t.id);
-          }
-          await refreshAllLists();
-        });
-
-        const btnDelete = document.createElement("button");
-        btnDelete.textContent = "Delete";
-        btnDelete.className = "d";
-        btnDelete.addEventListener("click", async () => {
-          const ok = confirm(`Delete TL "${t.id}"? This will also delete related codes/feedback via cascade.`);
-          if (!ok) return;
-          await deleteTL(t.id);
-          await refreshAllLists();
-        });
-
-        chip.appendChild(btnToggle);
-        chip.appendChild(btnDelete);
-
-        wrap.appendChild(chip);
-      });
-    }
-
-    async function fetchCampaigns() {
-      const res = await fetch(API_BASE + "/api/admin/campaigns", { headers: authHeaders() });
-      const data = await res.json();
-      return data.campaigns || [];
-    }
-
-    async function fetchTeamLeaders() {
-      const res = await fetch(API_BASE + "/api/admin/team-leaders", { headers: authHeaders() });
-      const data = await res.json();
-      return data.teamLeaders || [];
+      // also set generator campaign default
+      document.getElementById("gen-campaign").value = campaigns[0].id;
     }
 
     // Create cycle
     async function createCycle() {
       const id = document.getElementById("cycle-id").value.trim();
       const label = document.getElementById("cycle-label").value.trim();
-      const msg = document.getElementById("cycle-msg");
+      const msg = document.getElementById("create-cycle-msg");
       msg.textContent = "";
 
-      if (!id || !label) { msg.textContent = "Provide both an ID and a label."; return; }
+      if (!id || !label) {
+        msg.textContent = "Provide both an ID and a label.";
+        return;
+      }
 
       const res = await fetch(API_BASE + "/api/admin/campaigns", {
         method: "POST",
-        headers: { "Content-Type": "application/json", ...authHeaders() },
+        headers: {
+          "Content-Type": "application/json",
+          ...authHeaders()
+        },
         body: JSON.stringify({ campaignId: id, label })
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) { msg.textContent = data.error || "Error creating cycle."; return; }
 
-      msg.textContent = "Cycle saved.";
-      await refreshAllLists();
+      if (!res.ok) {
+        msg.textContent = data.error || "Error creating cycle.";
+        return;
+      }
+
+      msg.textContent = "Cycle created/updated.";
+      // Refresh campaigns list
+      const res2 = await fetch(API_BASE + "/api/admin/campaigns", {
+        headers: authHeaders()
+      });
+      const data2 = await res2.json();
+      populateCampaignSelection(data2.campaigns || []);
+      await loadOverview();
     }
 
     document.getElementById("create-cycle-btn").addEventListener("click", createCycle);
 
-    async function deleteSelectedCycle() {
-      const sel = document.getElementById("campaign-select");
-      const campaignId = sel.value;
-      const msg = document.getElementById("cycle-msg");
-      msg.textContent = "";
+    let currentCampaignId = null;
+    let currentTLId = null;
+    let lastDetailData = null;
+    let radarChart = null;
+    let barChart = null;
 
-      if (!campaignId) { msg.textContent = "Select a cycle first."; return; }
-      const ok = confirm(`Delete cycle "${campaignId}"? This deletes codes + feedback in that cycle.`);
-      if (!ok) return;
-
-      const res = await fetch(API_BASE + "/api/admin/delete-cycle", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...authHeaders() },
-        body: JSON.stringify({ campaignId })
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) { msg.textContent = data.error || "Error deleting cycle."; return; }
-
-      msg.textContent = "Cycle deleted.";
-      currentCampaignId = null;
-      currentTLId = null;
-      document.getElementById("detail-block").style.display = "none";
-      document.getElementById("detail-intro").style.display = "block";
-      await refreshAllLists();
-      await loadOverview();
-    }
-
-    document.getElementById("delete-cycle-btn").addEventListener("click", deleteSelectedCycle);
-
-    // TL functions
-    async function addOrReactivateTL(name) {
-      const res = await fetch(API_BASE + "/api/admin/team-leaders", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...authHeaders() },
-        body: JSON.stringify({ name })
-      });
-      return res.ok;
-    }
-
-    async function deactivateTL(name) {
-      const res = await fetch(API_BASE + "/api/admin/team-leaders/deactivate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...authHeaders() },
-        body: JSON.stringify({ name })
-      });
-      return res.ok;
-    }
-
-    async function deleteTL(name) {
-      const res = await fetch(API_BASE + "/api/admin/team-leaders/delete", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...authHeaders() },
-        body: JSON.stringify({ name })
-      });
-      return res.ok;
-    }
-
-    document.getElementById("save-tl-btn").addEventListener("click", async () => {
-      const name = document.getElementById("new-tl").value.trim();
-      const msg = document.getElementById("tl-msg");
-      msg.textContent = "";
-      if (!name) { msg.textContent = "Enter a name."; return; }
-      await addOrReactivateTL(name);
-      document.getElementById("new-tl").value = "";
-      msg.textContent = "Saved.";
-      await refreshAllLists();
-    });
-
-    // Overview
     async function loadOverview() {
       const campaignId = document.getElementById("campaign-select").value;
       const status = document.getElementById("cycle-status");
       status.textContent = "";
-
-      if (!campaignId) {
-        status.textContent = "No cycle selected.";
-        return;
-      }
-      currentCampaignId = campaignId;
+      if (!campaignId) return;
 
       const res = await fetch(
         API_BASE + `/api/admin/overview?campaignId=${encodeURIComponent(campaignId)}`,
         { headers: authHeaders() }
       );
+
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         status.textContent = data.error || "Error loading overview.";
         return;
       }
+
+      status.textContent = data.campaign ? `Loaded: ${data.campaign.label}` : "Loaded.";
 
       const tbody = document.querySelector("#overview-table tbody");
       tbody.innerHTML = "";
@@ -562,22 +437,22 @@
       (data.results || []).forEach(row => {
         const tr = document.createElement("tr");
         tr.dataset.tl = row.teamLeaderId;
-        const p = pillFor(row.avgScore);
+
+        const interp = interpretScore(row.avgScore);
 
         tr.innerHTML = `
           <td>${row.teamLeaderId}</td>
           <td>${row.responseCount}</td>
-          <td>${row.responseCount ? row.avgScore.toFixed(2) : "-"}</td>
-          <td><span class="pill ${p.cls}">${p.text}</span></td>
+          <td>${row.avgScore ? Number(row.avgScore).toFixed(2) : "-"}</td>
+          <td><span class="pill ${interp.class}">${interp.label}</span></td>
         `;
 
-        tr.addEventListener("click", () => loadDetail(campaignId, row.teamLeaderId));
+        tr.addEventListener("click", () =>
+          loadDetail(campaignId, row.teamLeaderId)
+        );
+
         tbody.appendChild(tr);
       });
-
-      // keep compare dropdowns synced
-      populateCampaignDropdown(document.getElementById("cmp-from"), allCampaigns);
-      populateCampaignDropdown(document.getElementById("cmp-to"), allCampaigns);
     }
 
     document.getElementById("refresh-overview").addEventListener("click", loadOverview);
@@ -586,73 +461,70 @@
       currentCampaignId = campaignId;
       currentTLId = teamLeaderId;
 
+      // clear AI boxes
+      document.getElementById("ai-manager").textContent = "";
+      document.getElementById("ai-tl").textContent = "";
+      document.getElementById("ai-status").textContent = "";
+
       const res = await fetch(
         API_BASE + `/api/admin/detail?campaignId=${encodeURIComponent(campaignId)}&teamLeaderId=${encodeURIComponent(teamLeaderId)}`,
         { headers: authHeaders() }
       );
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        alert(data.error || "Error loading detail.");
+        alert(data.error || "Error loading detail");
         return;
       }
-
       lastDetailData = data;
 
       document.getElementById("detail-intro").style.display = "none";
-      document.getElementById("detail-block").style.display = "block";
+      const block = document.getElementById("detail-block");
+      block.style.display = "block";
 
       document.getElementById("detail-title").textContent =
         `${teamLeaderId} – ${data.responseCount} responses, overall avg ${data.avgOverall ? Number(data.avgOverall).toFixed(2) : "-"}`;
 
-      // Summary text
-      const catEntries = Object.entries(data.categoryAverages || {}).filter(([_, v]) => v != null);
-      catEntries.sort((a,b) => (b[1]||0) - (a[1]||0));
-      const strongest = catEntries[0];
-      const weakest = catEntries[catEntries.length - 1];
-
-      let summary = data.responseCount
-        ? `Based on ${data.responseCount} anonymous responses, the overall average score is ${data.avgOverall ? Number(data.avgOverall).toFixed(2) : "-"} out of 5.`
-        : "No feedback submitted yet for this team leader in this cycle.";
-
-      if (strongest && strongest[1] >= 3.75) summary += ` ${strongest[0]} is a clear strength.`;
-      if (weakest && weakest[1] < 3.5 && (!strongest || weakest[0] !== strongest[0])) summary += ` ${weakest[0]} shows the greatest opportunity for development.`;
-
-      document.getElementById("detail-summary-text").textContent = summary;
-
-      // Action areas
-      const aa = document.getElementById("action-areas");
-      if (!data.actionAreas || !data.actionAreas.length) {
-        aa.textContent = "Not enough data yet.";
-      } else {
-        aa.innerHTML = data.actionAreas.map(x =>
-          `• ${x.category}: ${Number(x.avg).toFixed(2)} (${x.interpretation})`
-        ).join("<br>");
-      }
-
-      // Category table
+      // Category scores
       const tbody = document.querySelector("#category-table tbody");
       tbody.innerHTML = "";
-      for (const [cat, avg] of Object.entries(data.categoryAverages || {})) {
-        const p = pillFor(avg);
+
+      const catScores = {};
+      for (const [cat, qids] of Object.entries(questionGroups)) {
+        let sum = 0, count = 0;
+        qids.forEach(qid => {
+          const v = data.questionAverages?.[qid];
+          if (v != null && !isNaN(v)) { sum += Number(v); count++; }
+        });
+        const avg = count ? sum / count : null;
+        catScores[cat] = avg;
+
+        const interp = interpretScore(avg);
+
         const tr = document.createElement("tr");
         tr.innerHTML = `
           <td>${cat}</td>
           <td>${avg != null ? Number(avg).toFixed(2) : "-"}</td>
-          <td><span class="pill ${p.cls}">${p.text}</span></td>
+          <td><span class="pill ${interp.class}">${interp.label}</span></td>
         `;
         tbody.appendChild(tr);
       }
 
-      // Comments
+      // Summary text
+      document.getElementById("detail-summary-text").textContent =
+        buildSummaryText(data, catScores);
+
+      // Comments area
       const commentsDiv = document.getElementById("comments-section");
       commentsDiv.innerHTML = "";
+
       if (!data.comments) {
-        commentsDiv.innerHTML = `<p class="muted">Comments hidden until 3+ responses to protect anonymity.</p>`;
+        commentsDiv.innerHTML =
+          `<p class="muted">Comments hidden until 3+ responses to protect anonymity.</p>`;
       } else {
         const { strengths, devs, others } = data.comments;
 
-        if (strengths.length) {
-          commentsDiv.innerHTML += "<h4>Strengths (raw comments)</h4>";
+        if (strengths && strengths.length) {
+          commentsDiv.innerHTML += "<h4>Strengths (themes)</h4>";
           strengths.forEach(c => {
             const div = document.createElement("div");
             div.className = "comment-block";
@@ -660,8 +532,9 @@
             commentsDiv.appendChild(div);
           });
         }
-        if (devs.length) {
-          commentsDiv.innerHTML += "<h4>Development areas (raw comments)</h4>";
+
+        if (devs && devs.length) {
+          commentsDiv.innerHTML += "<h4>Development areas (themes)</h4>";
           devs.forEach(c => {
             const div = document.createElement("div");
             div.className = "comment-block";
@@ -669,7 +542,8 @@
             commentsDiv.appendChild(div);
           });
         }
-        if (others.length) {
+
+        if (others && others.length) {
           commentsDiv.innerHTML += "<h4>Other comments</h4>";
           others.forEach(c => {
             const div = document.createElement("div");
@@ -680,20 +554,35 @@
         }
       }
 
-      document.getElementById("ai-summary-text").textContent = "";
-      document.getElementById("cmp-out").textContent = "";
+      // Charts
+      drawCharts(catScores, data.questionAverages || {});
+    }
 
-      drawCharts(data.categoryAverages || {}, data.questionAverages || {});
-
-      // Default compare selects: from previous cycle if exists
-      const fromSel = document.getElementById("cmp-from");
-      const toSel = document.getElementById("cmp-to");
-      toSel.value = campaignId;
-      if (allCampaigns.length >= 2) {
-        const idx = allCampaigns.findIndex(c => c.id === campaignId);
-        const prev = allCampaigns[idx + 1] || allCampaigns[1] || allCampaigns[0];
-        if (prev && prev.id) fromSel.value = prev.id;
+    function buildSummaryText(detail, catScores) {
+      if (detail.responseCount === 0) {
+        return "No feedback submitted yet for this team leader.";
       }
+
+      const parts = [];
+      const r = detail.responseCount;
+      const overall = detail.avgOverall != null ? Number(detail.avgOverall).toFixed(2) : "-";
+      parts.push(`Based on ${r} anonymous responses, the overall average score is ${overall} out of 5.`);
+
+      const entries = Object.entries(catScores).filter(([_, v]) => v != null);
+      if (!entries.length) return parts.join(" ");
+
+      entries.sort((a, b) => (b[1] ?? 0) - (a[1] ?? 0));
+      const strongest = entries[0];
+      const weakest = entries[entries.length - 1];
+
+      if ((strongest[1] ?? 0) >= 3.75) {
+        parts.push(`${strongest[0]} is a clear strength.`);
+      }
+      if ((weakest[1] ?? 99) < 3.5 && weakest[0] !== strongest[0]) {
+        parts.push(`${weakest[0]} shows the greatest opportunity for development.`);
+      }
+
+      return parts.join(" ");
     }
 
     function drawCharts(catScores, questionAverages) {
@@ -708,9 +597,16 @@
         type: "radar",
         data: {
           labels: catLabels,
-          datasets: [{ label: "Category average", data: catValues }]
+          datasets: [{
+            label: "Category average",
+            data: catValues
+          }]
         },
-        options: { scales: { r: { suggestedMin: 1, suggestedMax: 5 } } }
+        options: {
+          scales: {
+            r: { suggestedMin: 1, suggestedMax: 5 }
+          }
+        }
       });
 
       const qLabels = Object.keys(questionAverages).sort();
@@ -721,107 +617,127 @@
         type: "bar",
         data: {
           labels: qLabels,
-          datasets: [{ label: "Question avg", data: qValues }]
+          datasets: [{
+            label: "Question avg",
+            data: qValues
+          }]
         },
-        options: { scales: { y: { suggestedMin: 1, suggestedMax: 5 } } }
+        options: {
+          scales: { y: { suggestedMin: 1, suggestedMax: 5 } }
+        }
       });
     }
 
-    // AI summary
-    document.getElementById("ai-summary-btn").addEventListener("click", async () => {
-      const el = document.getElementById("ai-summary-text");
-      if (!currentCampaignId || !currentTLId) { el.textContent = "Select a team leader first."; return; }
-      el.textContent = "Generating AI summary...";
+    // AI summaries (manager + TL)
+    async function generateAiSummaries() {
+      const status = document.getElementById("ai-status");
+      const managerEl = document.getElementById("ai-manager");
+      const tlEl = document.getElementById("ai-tl");
+
+      if (!currentCampaignId || !currentTLId) {
+        status.textContent = "Select a team leader first.";
+        return;
+      }
+
+      status.textContent = "Generating...";
+      managerEl.textContent = "";
+      tlEl.textContent = "";
+
       const res = await fetch(
         API_BASE + `/api/admin/ai-summary?campaignId=${encodeURIComponent(currentCampaignId)}&teamLeaderId=${encodeURIComponent(currentTLId)}`,
         { headers: authHeaders() }
       );
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) { el.textContent = data.error || "Error generating AI summary."; return; }
-      el.textContent = data.summary || "(No summary)";
-    });
 
-    // Delete responses
-    document.getElementById("delete-responses-btn").addEventListener("click", async () => {
+      if (!res.ok) {
+        status.textContent = "";
+        managerEl.textContent = data.error || "Error generating AI summaries.";
+        tlEl.textContent = "";
+        return;
+      }
+
+      // Back-compat: if only "summary" exists, treat as manager summary
+      const managerSummary = data.managerSummary || data.summary || "";
+      const tlSummary = data.tlSummary || "";
+
+      managerEl.textContent = managerSummary;
+      tlEl.textContent = tlSummary;
+
+      status.textContent = "Done";
+      setTimeout(() => status.textContent = "", 2500);
+    }
+
+    document.getElementById("ai-summary-btn").addEventListener("click", generateAiSummaries);
+
+    // DELETE RESPONSES
+    async function deleteResponses() {
       if (!currentCampaignId || !currentTLId) return;
-      const ok = confirm(`Delete ALL responses for ${currentTLId} in cycle ${currentCampaignId}? This cannot be undone.`);
-      if (!ok) return;
+      const confirmDelete = confirm(
+        `Delete ALL responses for ${currentTLId} in cycle ${currentCampaignId}? This cannot be undone.`
+      );
+      if (!confirmDelete) return;
 
       const res = await fetch(API_BASE + "/api/admin/delete-feedback", {
         method: "POST",
-        headers: { "Content-Type": "application/json", ...authHeaders() },
-        body: JSON.stringify({ campaignId: currentCampaignId, teamLeaderId: currentTLId })
+        headers: {
+          "Content-Type": "application/json",
+          ...authHeaders()
+        },
+        body: JSON.stringify({
+          campaignId: currentCampaignId,
+          teamLeaderId: currentTLId
+        })
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) { alert(data.error || "Error deleting feedback."); return; }
+
+      if (!res.ok) {
+        alert(data.error || "Error deleting feedback.");
+        return;
+      }
+
       alert(`Deleted ${data.deletedRows || 0} responses.`);
       await loadOverview();
       document.getElementById("detail-block").style.display = "none";
       document.getElementById("detail-intro").style.display = "block";
-    });
+    }
 
-    // Generate codes
-    document.getElementById("gen-btn").addEventListener("click", async () => {
-      const campaignId = document.getElementById("gen-campaign").value;
-      const teamLeaderId = document.getElementById("gen-tl").value;
+    document.getElementById("delete-responses-btn").addEventListener("click", deleteResponses);
+
+    // GENERATE CODES
+    async function generateCodes() {
+      const campaignId = document.getElementById("gen-campaign").value.trim();
+      const teamLeaderId = document.getElementById("gen-tl").value.trim();
       const count = Number(document.getElementById("gen-count").value);
       const out = document.getElementById("gen-output");
       out.textContent = "";
 
-      if (!campaignId || !teamLeaderId || !count) { out.textContent = "Fill all fields."; return; }
+      if (!campaignId || !teamLeaderId || !count) {
+        out.textContent = "Please fill all fields.";
+        return;
+      }
 
       const res = await fetch(API_BASE + "/api/admin/generate-codes", {
         method: "POST",
-        headers: { "Content-Type": "application/json", ...authHeaders() },
+        headers: {
+          "Content-Type": "application/json",
+          ...authHeaders()
+        },
         body: JSON.stringify({ campaignId, teamLeaderId, count })
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) { out.textContent = data.error || "Error generating codes."; return; }
-      out.textContent = (data.codes || []).join("\n");
-    });
 
-    // Compare cycles
-    document.getElementById("cmp-btn").addEventListener("click", async () => {
-      const out = document.getElementById("cmp-out");
-      out.textContent = "";
-      if (!currentTLId) { out.textContent = "Select a team leader first."; return; }
-
-      const fromCycle = document.getElementById("cmp-from").value;
-      const toCycle = document.getElementById("cmp-to").value;
-      const includeAi = document.getElementById("cmp-ai").checked ? "1" : "0";
-
-      if (!fromCycle || !toCycle) { out.textContent = "Pick two cycles."; return; }
-      if (fromCycle === toCycle) { out.textContent = "Pick two different cycles."; return; }
-
-      out.textContent = "Comparing...";
-      const res = await fetch(
-        API_BASE + `/api/admin/compare?teamLeaderId=${encodeURIComponent(currentTLId)}&fromCycle=${encodeURIComponent(fromCycle)}&toCycle=${encodeURIComponent(toCycle)}&includeAi=${includeAi}`,
-        { headers: authHeaders() }
-      );
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) { out.textContent = data.error || "Compare failed."; return; }
-
-      const od = data.overallDelta;
-      const overallLine = (od == null) ? "Overall: n/a" : `Overall change: ${od >= 0 ? "+" : ""}${od.toFixed(2)}`;
-
-      const deltas = data.deltas || {};
-      const lines = [];
-      for (const [cat, d] of Object.entries(deltas)) {
-        if (d == null) continue;
-        lines.push(`${cat}: ${d >= 0 ? "+" : ""}${d.toFixed(2)}`);
+      if (!res.ok) {
+        out.textContent = data.error || "Error generating codes.";
+        return;
       }
 
-      let txt = `${overallLine}\n\nCategory changes:\n${lines.length ? lines.map(l => "• " + l).join("\n") : "n/a"}`;
+      out.textContent = data.codes.join("\n");
+    }
 
-      if (data.aiChangeSummary) {
-        txt += `\n\nAI change summary:\n${data.aiChangeSummary}`;
-      }
+    document.getElementById("gen-btn").addEventListener("click", generateCodes);
 
-      out.textContent = txt;
-    });
-
-    // PDF
-    document.getElementById("pdf-btn").addEventListener("click", async () => {
+    // PDF EXPORT (simple)
+    async function exportPdf() {
       if (!lastDetailData || !currentTLId || !currentCampaignId) return;
 
       const { jsPDF } = window.jspdf;
@@ -836,22 +752,37 @@
       doc.text(`Responses: ${lastDetailData.responseCount}`, 10, 31);
       doc.text(`Overall average: ${lastDetailData.avgOverall ? Number(lastDetailData.avgOverall).toFixed(2) : "-"}`, 10, 37);
 
-      doc.setFontSize(11);
+      // Summary
+      const summary = document.getElementById("detail-summary-text").textContent || "";
       doc.text("Summary:", 10, 47);
       doc.setFontSize(10);
-      const summary = document.getElementById("detail-summary-text").textContent || "";
       doc.text(doc.splitTextToSize(summary, 180), 10, 53);
 
-      const aiSummary = document.getElementById("ai-summary-text").textContent || "";
-      if (aiSummary && !aiSummary.startsWith("Generating")) {
+      // AI summaries if present
+      const managerSummary = (document.getElementById("ai-manager").textContent || "").trim();
+      const tlSummary = (document.getElementById("ai-tl").textContent || "").trim();
+
+      let y = 80;
+
+      if (managerSummary) {
         doc.setFontSize(11);
-        doc.text("AI themes from comments:", 10, 85);
+        doc.text("AI (Manager actions):", 10, y);
         doc.setFontSize(10);
-        doc.text(doc.splitTextToSize(aiSummary, 180), 10, 91);
+        doc.text(doc.splitTextToSize(managerSummary, 180), 10, y + 6);
+        y += 45;
+      }
+
+      if (tlSummary) {
+        doc.setFontSize(11);
+        doc.text("AI (Message to TL):", 10, y);
+        doc.setFontSize(10);
+        doc.text(doc.splitTextToSize(tlSummary, 180), 10, y + 6);
       }
 
       doc.save(`TL360-${currentCampaignId}-${currentTLId}.pdf`);
-    });
+    }
+
+    document.getElementById("pdf-btn").addEventListener("click", exportPdf);
   </script>
 </body>
 </html>
