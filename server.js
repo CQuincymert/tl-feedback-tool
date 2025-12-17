@@ -6,6 +6,8 @@
  * - /api/submit-feedback accepts ONLY sessionToken + answers
  * - Admin supports cycles, TL list, code generation, overview/detail, delete responses, delete cycle
  * - AI summary endpoints optional (require OPENAI_API_KEY); otherwise they return helpful error
+ *
+ * IMPORTANT: Question IDs are q1..q15 (Never..Always scale). Category grouping updated accordingly.
  */
 
 const express = require("express");
@@ -77,13 +79,26 @@ function randomCode() {
   return `${part()}-${part()}`;
 }
 
-// Question groups used for analytics (must match the questionnaire qids)
+/**
+ * Category mapping MUST match the questionnaire:
+ *
+ * Leadership & Management
+ * 1..3 => q1 q2 q3
+ * Communication
+ * 4..6 => q4 q5 q6
+ * Team Support & Development
+ * 7..9 => q7 q8 q9
+ * Collaboration & Culture
+ * 10..12 => q10 q11 q12
+ * Execution & Accountability
+ * 13..15 => q13 q14 q15
+ */
 const QUESTION_GROUPS = {
-  "Leadership & Management": ["q2", "q3", "q4"],
-  "Communication": ["q5", "q6", "q7"],
-  "Team Support & Development": ["q8", "q9", "q10"],
-  "Collaboration & Culture": ["q11", "q12", "q13"],
-  "Execution & Accountability": ["q14", "q15", "q16"]
+  "Leadership & Management": ["q1", "q2", "q3"],
+  "Communication": ["q4", "q5", "q6"],
+  "Team Support & Development": ["q7", "q8", "q9"],
+  "Collaboration & Culture": ["q10", "q11", "q12"],
+  "Execution & Accountability": ["q13", "q14", "q15"]
 };
 
 function computeCategoryAverages(questionAverages) {
@@ -114,7 +129,6 @@ function interpretScore(score) {
 }
 
 async function initDb() {
-  // campaigns.id is TEXT. No campaign_key (avoids drift).
   await pool.query(`
     CREATE TABLE IF NOT EXISTS campaigns (
       id TEXT PRIMARY KEY,
@@ -177,7 +191,7 @@ app.get("/health", async (req, res) => {
   try {
     await pool.query("SELECT 1;");
     res.json({ ok: true });
-  } catch (e) {
+  } catch {
     res.status(500).json({ ok: false });
   }
 });
@@ -186,8 +200,6 @@ app.get("/health", async (req, res) => {
 // PUBLIC API (Questionnaire)
 // -----------------------------
 
-// Start session: verify code; return sessionToken only.
-// IMPORTANT: Front-end must only store sessionToken, nothing else.
 app.post("/api/start-session", async (req, res) => {
   const code = safeUpper(req.body?.code);
   if (!code) return res.status(400).json({ error: "Code is required." });
@@ -220,8 +232,6 @@ app.post("/api/start-session", async (req, res) => {
   }
 });
 
-// Submit feedback: sessionToken + answers only.
-// Marks code used in a transaction.
 app.post("/api/submit-feedback", async (req, res) => {
   const sessionToken = safeText(req.body?.sessionToken);
   const scores = req.body?.scores || null;
@@ -232,7 +242,7 @@ app.post("/api/submit-feedback", async (req, res) => {
   if (!sessionToken) return res.status(400).json({ error: "Missing sessionToken." });
   if (!scores || typeof scores !== "object") return res.status(400).json({ error: "Missing scores." });
 
-  // Require written answers (you asked these NOT to say optional)
+  // Require written answers (as per your current UI)
   if (!strengthsText || !devText || !otherText) {
     return res.status(400).json({ error: "Please complete all written questions before submitting." });
   }
@@ -240,7 +250,7 @@ app.post("/api/submit-feedback", async (req, res) => {
   let payload;
   try {
     payload = verifySessionToken(sessionToken);
-  } catch (e) {
+  } catch {
     return res.status(401).json({ error: "Session expired. Please click Start over and re-enter your code." });
   }
 
@@ -249,7 +259,6 @@ app.post("/api/submit-feedback", async (req, res) => {
     return res.status(400).json({ error: "Invalid session. Please start over." });
   }
 
-  // Compute overall average from numeric values
   const values = Object.values(scores).map(Number).filter(v => Number.isFinite(v));
   if (!values.length) return res.status(400).json({ error: "Scores incomplete." });
   const overall = values.reduce((a, b) => a + b, 0) / values.length;
@@ -258,7 +267,6 @@ app.post("/api/submit-feedback", async (req, res) => {
   try {
     await client.query("BEGIN");
 
-    // Lock code row so it can't be double-used
     const codeRow = await client.query(
       `SELECT used FROM codes WHERE id = $1 FOR UPDATE`,
       [codeId]
@@ -273,7 +281,6 @@ app.post("/api/submit-feedback", async (req, res) => {
       return res.status(409).json({ error: "This code has already been used." });
     }
 
-    // Insert feedback
     await client.query(
       `
       INSERT INTO feedback (campaign_id, team_leader_id, scores_json, overall_score, strengths_text, dev_text, other_text)
@@ -282,7 +289,6 @@ app.post("/api/submit-feedback", async (req, res) => {
       [campaignId, teamLeaderId, JSON.stringify(scores), overall, strengthsText, devText, otherText]
     );
 
-    // Mark code used
     await client.query(
       `UPDATE codes SET used = true, used_at = now() WHERE id = $1`,
       [codeId]
@@ -303,7 +309,6 @@ app.post("/api/submit-feedback", async (req, res) => {
 // ADMIN API
 // -----------------------------
 
-// Campaigns
 app.get("/api/admin/campaigns", adminAuth, async (req, res) => {
   const r = await pool.query(`SELECT id, label, created_at FROM campaigns ORDER BY created_at DESC;`);
   res.json({ campaigns: r.rows });
@@ -491,7 +496,6 @@ app.get("/api/admin/detail", adminAuth, async (req, res) => {
 
     const responseCount = r.rowCount;
 
-    // Compute per-question averages
     const sums = {};
     const counts = {};
     let overallSum = 0;
@@ -514,7 +518,6 @@ app.get("/api/admin/detail", adminAuth, async (req, res) => {
 
     const avgOverall = responseCount ? overallSum / responseCount : null;
 
-    // Comments hidden until MIN_COMMENTS_FOR_DISPLAY
     let comments = null;
     if (responseCount >= MIN_COMMENTS_FOR_DISPLAY) {
       const strengths = r.rows.map(x => safeText(x.strengths_text)).filter(Boolean);
@@ -523,7 +526,6 @@ app.get("/api/admin/detail", adminAuth, async (req, res) => {
       comments = { strengths, devs, others };
     }
 
-    // “Team action” hints: weakest categories (simple)
     const catScores = computeCategoryAverages(questionAverages);
     const catEntries = Object.entries(catScores).filter(([_, v]) => v != null);
     catEntries.sort((a, b) => (a[1] ?? 0) - (b[1] ?? 0)); // weakest first
@@ -567,13 +569,98 @@ app.post("/api/admin/delete-feedback", adminAuth, async (req, res) => {
   }
 });
 
-// ---- AI summary of comments (per TL + cycle) ----
+// -----------------------------
+// AI summaries (Manager + TL)
+// -----------------------------
+
+async function aiGenerateText(prompt) {
+  // Using OpenAI Responses API (same as your current approach)
+  const resp = await openai.responses.create({
+    model: "gpt-4.1-mini",
+    input: prompt
+  });
+  return resp.output_text?.trim() || "No AI output.";
+}
+
+function buildManagerPrompt({ teamLeaderId, campaignId, strengths, devs, others }) {
+  return `
+You are summarising anonymous 360 feedback comments for a team leader to help managers decide actions.
+Important rules:
+- DO NOT include anything that could identify individuals (no names, no unique incidents, no exact quotes).
+- Paraphrase into themes only.
+- UK English.
+- If there are very few comments, state that insights are limited.
+
+Output format:
+Strengths (themes):
+- ...
+Development (themes):
+- ...
+Other notes (themes):
+- ...
+
+Suggested actions (3):
+1) ...
+2) ...
+3) ...
+
+Context:
+Team Leader: ${teamLeaderId}
+Cycle: ${campaignId}
+
+Comments:
+Strengths:
+${strengths.map(s => `- ${s}`).join("\n")}
+
+Development:
+${devs.map(s => `- ${s}`).join("\n")}
+
+Other:
+${others.map(s => `- ${s}`).join("\n")}
+`.trim();
+}
+
+function buildTlPrompt({ teamLeaderId, campaignId, strengths, devs, others }) {
+  return `
+Write a TL-facing feedback message as a SINGLE block of text (no headings, no bullets).
+Tone: supportive, professional, motivating, not HR-jargon.
+Important rules:
+- DO NOT include anything that could identify individuals (no names, no unique incidents, no exact quotes).
+- Do not mention managers or "actions for managers".
+- Do not include numeric scores or averages.
+- Focus on themes of observable behaviours.
+Length: ~140–220 words.
+UK English.
+
+Context:
+Team Leader: ${teamLeaderId}
+Cycle: ${campaignId}
+
+Anonymous comment themes source (do not quote directly):
+Strengths:
+${strengths.map(s => `- ${s}`).join("\n")}
+
+Development:
+${devs.map(s => `- ${s}`).join("\n")}
+
+Other:
+${others.map(s => `- ${s}`).join("\n")}
+`.trim();
+}
+
+// Returns BOTH summaries. Keeps `summary` for backward compatibility (manager summary).
 app.get("/api/admin/ai-summary", adminAuth, async (req, res) => {
-  if (!openai) return res.status(400).json({ error: "AI is not configured on the server (missing OPENAI_API_KEY or openai package)." });
+  if (!openai) {
+    return res.status(400).json({
+      error: "AI is not configured on the server (missing OPENAI_API_KEY or openai package)."
+    });
+  }
 
   const campaignId = safeText(req.query?.campaignId);
   const teamLeaderId = safeText(req.query?.teamLeaderId);
-  if (!campaignId || !teamLeaderId) return res.status(400).json({ error: "campaignId and teamLeaderId required" });
+  if (!campaignId || !teamLeaderId) {
+    return res.status(400).json({ error: "campaignId and teamLeaderId required" });
+  }
 
   try {
     const r = await pool.query(
@@ -587,55 +674,39 @@ app.get("/api/admin/ai-summary", adminAuth, async (req, res) => {
     );
 
     if (r.rowCount < MIN_COMMENTS_FOR_DISPLAY) {
-      return res.json({ summary: `AI summary hidden until ${MIN_COMMENTS_FOR_DISPLAY}+ responses to protect anonymity.` });
+      const msg = `AI summary hidden until ${MIN_COMMENTS_FOR_DISPLAY}+ responses to protect anonymity.`;
+      return res.json({
+        summary: msg,             // keep existing field
+        managerSummary: msg,
+        tlSummary: msg
+      });
     }
 
     const strengths = r.rows.map(x => safeText(x.strengths_text)).filter(Boolean);
     const devs = r.rows.map(x => safeText(x.dev_text)).filter(Boolean);
     const others = r.rows.map(x => safeText(x.other_text)).filter(Boolean);
 
-    const prompt = `
-You are summarising anonymous 360 feedback comments for a team leader.
-Important: DO NOT include anything that could identify individuals. No names, no unique incidents, no exact quotes.
-Return concise bullet themes.
+    const managerPrompt = buildManagerPrompt({ teamLeaderId, campaignId, strengths, devs, others });
+    const tlPrompt = buildTlPrompt({ teamLeaderId, campaignId, strengths, devs, others });
 
-Output format:
-Strengths:
-- ...
-Development:
-- ...
-Other notes:
-- ...
-Suggested actions (3):
-1) ...
-2) ...
-3) ...
+    const managerSummary = await aiGenerateText(managerPrompt);
+    const tlSummary = await aiGenerateText(tlPrompt);
 
-Comments:
-Strengths:
-${strengths.map(s => `- ${s}`).join("\n")}
-
-Development:
-${devs.map(s => `- ${s}`).join("\n")}
-
-Other:
-${others.map(s => `- ${s}`).join("\n")}
-`.trim();
-
-    const resp = await openai.responses.create({
-      model: "gpt-4.1-mini",
-      input: prompt
+    // `summary` kept so your current admin UI still works with no changes.
+    res.json({
+      summary: managerSummary,
+      managerSummary,
+      tlSummary
     });
-
-    const text = resp.output_text?.trim() || "No AI output.";
-    res.json({ summary: text });
   } catch (e) {
     console.error("AI summary error:", e);
     res.status(500).json({ error: "AI summary failed." });
   }
 });
 
-// ---- Compare any two cycles for a TL (numbers + optional AI change summary) ----
+// -----------------------------
+// Compare any two cycles for a TL (numbers + optional AI change summary)
+// -----------------------------
 app.get("/api/admin/compare", adminAuth, async (req, res) => {
   const teamLeaderId = safeText(req.query?.teamLeaderId);
   const fromCycle = safeText(req.query?.fromCycle);
@@ -697,14 +768,14 @@ app.get("/api/admin/compare", adminAuth, async (req, res) => {
     const fromAgg = await getAgg(fromCycle);
     const toAgg = await getAgg(toCycle);
 
-    // Compute deltas per category + overall
     const deltas = {};
     for (const cat of Object.keys(QUESTION_GROUPS)) {
       const a = fromAgg.categoryAverages[cat];
       const b = toAgg.categoryAverages[cat];
       deltas[cat] = (a == null || b == null) ? null : (b - a);
     }
-    const overallDelta = (fromAgg.avgOverall == null || toAgg.avgOverall == null) ? null : (toAgg.avgOverall - fromAgg.avgOverall);
+    const overallDelta =
+      (fromAgg.avgOverall == null || toAgg.avgOverall == null) ? null : (toAgg.avgOverall - fromAgg.avgOverall);
 
     let aiChangeSummary = null;
     if (includeAi) {
@@ -714,7 +785,7 @@ app.get("/api/admin/compare", adminAuth, async (req, res) => {
         const prompt = `
 You are comparing two 360 feedback cycles for the same team leader.
 Summarise changes as themes, without identifying individuals.
-Be honest if data is thin.
+Be honest if data is thin. UK English.
 
 Return:
 - What improved
