@@ -1,342 +1,679 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Team Leader Feedback</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Team Leader 360° Feedback</title>
   <style>
-    body {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: linear-gradient(135deg, #f8fafc, #eef2ff);
-      margin: 0;
-      padding: 2rem 1rem;
-      color: #0f172a;
+    :root{
+      --bg1:#eef4ff;
+      --bg2:#f7f7fb;
+      --card:#ffffff;
+      --text:#0f172a;
+      --muted:#64748b;
+      --border:#e5e7eb;
+      --primary:#2563eb;
+      --primary2:#1d4ed8;
+      --danger:#dc2626;
+      --ok:#16a34a;
+      --shadow: 0 18px 50px rgba(15,23,42,0.10);
+      --radius: 16px;
     }
-    .shell {
-      max-width: 960px;
-      margin: 0 auto;
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(1200px 600px at 20% 10%, var(--bg1), transparent 60%),
+        radial-gradient(900px 500px at 85% 20%, #e9e7ff, transparent 55%),
+        linear-gradient(180deg, var(--bg2), #ffffff 70%);
+      min-height:100vh;
+      padding: 28px 14px;
     }
-    .card {
-      background: #fff;
-      border-radius: 16px;
-      box-shadow: 0 18px 45px rgba(15, 23, 42, 0.12);
-      padding: 1.6rem 1.8rem;
-      border: 1px solid #e5e7eb;
+
+    .wrap{
+      max-width: 980px;
+      margin:0 auto;
     }
-    h1 { margin: 0; font-size: 1.8rem; }
-    .subtitle { color:#475569; margin-top: 0.35rem; line-height: 1.4; }
-    .topline { display:flex; justify-content:space-between; align-items:center; gap:1rem; margin-bottom: 1rem; }
-    .badge { font-size: 0.85rem; padding: 0.15rem 0.6rem; border-radius:999px; background:#eff6ff; border:1px solid #bfdbfe; color:#1d4ed8; }
-    .progress-wrap { margin-top: 0.8rem; }
-    .progress-meta { display:flex; justify-content:space-between; font-size:0.9rem; color:#64748b; margin-bottom:0.3rem; }
-    .progress {
-      width: 100%;
-      height: 10px;
-      background: #e5e7eb;
-      border-radius: 999px;
+
+    .topbar{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      margin-bottom:14px;
+    }
+
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      color:var(--muted);
+      font-size:0.92rem;
+    }
+    .dot{
+      width:10px;height:10px;border-radius:999px;
+      background: radial-gradient(circle at 30% 30%, #93c5fd, #2563eb);
+      box-shadow: 0 0 0 4px rgba(37,99,235,0.10);
+    }
+
+    .card{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 22px 22px;
+    }
+
+    h1{
+      margin: 0 0 4px 0;
+      font-size: 1.7rem;
+      letter-spacing: -0.02em;
+    }
+    .subtitle{
+      margin: 0 0 18px 0;
+      color:var(--muted);
+      line-height:1.45;
+    }
+
+    .anonymity{
+      display:flex;
+      gap:10px;
+      align-items:flex-start;
+      background: #eef7ff;
+      border: 1px solid #dbeafe;
+      border-radius: 12px;
+      padding: 12px 12px;
+      margin: 14px 0 16px;
+    }
+    .lock{
+      width:26px;height:26px;border-radius:10px;
+      background:#dbeafe;
+      display:grid;place-items:center;
+      color:#1d4ed8;
+      flex: 0 0 26px;
+      font-weight:700;
+    }
+    .anonymity p{margin:0;color:#0f172a}
+    .anonymity small{display:block;color:var(--muted);margin-top:4px}
+
+    .progress{
+      margin: 12px 0 12px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      color: var(--muted);
+      font-size:0.9rem;
+    }
+    .bar{
+      flex:1;
+      height:10px;
+      background:#eef2ff;
+      border-radius:999px;
+      border:1px solid #e5e7eb;
       overflow:hidden;
     }
-    .progress > div {
-      height: 100%;
+    .bar > div{
+      height:100%;
       width: 0%;
-      background: #2563eb;
-      transition: width 200ms ease;
+      background: linear-gradient(90deg, #60a5fa, var(--primary));
+      border-radius:999px;
+      transition: width .25s ease;
+    }
+    .pct{min-width:44px;text-align:right;}
+
+    .section{
+      margin-top: 18px;
+      padding-top: 18px;
+      border-top: 1px dashed #e5e7eb;
+    }
+    .section h2{
+      margin:0 0 6px 0;
+      font-size:1.15rem;
+      letter-spacing:-0.01em;
+    }
+    .section p{
+      margin: 0 0 12px 0;
+      color: var(--muted);
+      line-height:1.45;
+      font-size:0.95rem;
     }
 
-    .section-title { margin-top: 1.2rem; font-size: 1.15rem; }
-    .muted { color:#64748b; font-size:0.92rem; line-height:1.4; }
-
-    .box {
-      border: 1px solid #e5e7eb;
-      background:#fafafa;
-      border-radius: 14px;
-      padding: 1rem 1.1rem;
-      margin-top: 1rem;
+    .bullets{
+      margin: 10px 0 0 0;
+      padding-left: 18px;
+      color: var(--muted);
+      line-height:1.6;
+      font-size:0.95rem;
     }
 
-    label { display:block; font-weight:700; margin-top: 0.9rem; }
-    .qhelp { font-weight: 500; color:#64748b; font-size:0.92rem; margin-top: 0.2rem; }
-
-    .scale {
-      display:flex;
-      gap: 0.5rem;
-      flex-wrap: wrap;
-      margin-top: 0.55rem;
-    }
-    .scale label {
-      margin: 0;
-      font-weight: 600;
-      border: 1px solid #d1d5db;
-      background: #fff;
-      padding: 0.45rem 0.7rem;
-      border-radius: 999px;
-      cursor:pointer;
-      user-select:none;
-    }
-    .scale input { display:none; }
-    .scale input:checked + span {
-      background:#2563eb;
-      color:#fff;
-      border-color:#2563eb;
-    }
-    .scale span {
-      display:inline-block;
-      padding: 0.05rem 0.2rem;
-      border-radius: 999px;
-    }
-
-    input[type="text"], textarea {
-      width: 100%;
-      box-sizing: border-box;
-      padding: 0.75rem 0.85rem;
+    .scale{
+      margin-top: 10px;
+      border:1px solid var(--border);
       border-radius: 12px;
-      border: 1px solid #d1d5db;
-      font-size: 1rem;
-      margin-top: 0.45rem;
+      padding: 12px 12px;
+      background: #fafafa;
+    }
+    .scale strong{display:block;margin-bottom:6px}
+    .scaleRow{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      color: var(--muted);
+      font-size:0.92rem;
+      align-items:center;
+    }
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding: 6px 10px;
+      border:1px solid #e5e7eb;
+      border-radius:999px;
       background:#fff;
     }
-    textarea { min-height: 120px; resize: vertical; }
-
-    .actions { display:flex; justify-content:flex-end; gap:0.6rem; margin-top: 1.1rem; }
-    button {
-      padding: 0.65rem 1rem;
-      border-radius: 12px;
-      border: none;
-      background: #2563eb;
-      color: white;
-      cursor: pointer;
-      font-size: 1rem;
-      font-weight: 700;
+    .sq{
+      width:10px;height:10px;border-radius:3px;
+      background:#cbd5e1;
     }
-    button.secondary { background:#e5e7eb; color:#111827; }
-    button:hover { filter: brightness(0.95); }
 
-    .error {
-      margin-top: 0.8rem;
-      padding: 0.75rem 0.9rem;
-      border-radius: 12px;
-      background: #fef2f2;
-      border: 1px solid #fecaca;
-      color: #991b1b;
+    .step{
       display:none;
-      white-space: pre-wrap;
+      margin-top: 10px;
     }
-    .ok {
-      margin-top: 0.8rem;
-      padding: 0.75rem 0.9rem;
+    .step.active{display:block;}
+
+    .field{
+      margin: 12px 0;
+    }
+    label{
+      display:block;
+      font-weight:600;
+      margin-bottom:6px;
+    }
+    input[type="text"], textarea{
+      width:100%;
+      border:1px solid var(--border);
       border-radius: 12px;
+      padding: 11px 12px;
+      font-size: 1rem;
+      outline:none;
+      transition: border-color .15s ease, box-shadow .15s ease;
+      background:#fff;
+    }
+    input[type="text"]:focus, textarea:focus{
+      border-color:#93c5fd;
+      box-shadow: 0 0 0 4px rgba(37,99,235,0.12);
+    }
+    textarea{
+      min-height: 110px;
+      resize: vertical;
+      line-height:1.45;
+    }
+
+    .btnRow{
+      display:flex;
+      justify-content:flex-end;
+      gap:10px;
+      margin-top: 14px;
+      flex-wrap:wrap;
+    }
+    button{
+      border:0;
+      border-radius: 12px;
+      padding: 10px 14px;
+      font-weight: 700;
+      cursor:pointer;
+      transition: transform .02s ease, background .15s ease, opacity .15s ease;
+      font-size: 0.98rem;
+    }
+    button:active{transform: translateY(1px);}
+    .primary{
+      background: var(--primary);
+      color:white;
+    }
+    .primary:hover{background: var(--primary2);}
+    .ghost{
+      background: #eef2ff;
+      color:#1e3a8a;
+      border:1px solid #dbeafe;
+    }
+    .danger{
+      background: #fee2e2;
+      color:#991b1b;
+      border:1px solid #fecaca;
+    }
+    button:disabled{
+      opacity:0.55;
+      cursor:not-allowed;
+    }
+
+    .err{
+      margin-top:10px;
+      background:#fef2f2;
+      border:1px solid #fecaca;
+      color:#991b1b;
+      border-radius: 12px;
+      padding: 10px 12px;
+      display:none;
+    }
+    .ok{
+      margin-top:10px;
+      background:#ecfdf5;
+      border:1px solid #bbf7d0;
+      color:#14532d;
+      border-radius: 12px;
+      padding: 10px 12px;
+      display:none;
+    }
+
+    /* Question blocks */
+    .qgroup{
+      margin-top: 18px;
+      padding-top: 18px;
+      border-top: 1px solid #eef2f7;
+    }
+    .qgroup h3{
+      margin: 0 0 10px 0;
+      font-size:1.05rem;
+      color:#0f172a;
+      letter-spacing:-0.01em;
+    }
+    .question{
+      border:1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px 12px;
+      background:#fff;
+      margin: 10px 0;
+    }
+    .qtext{
+      font-weight:600;
+      margin:0 0 10px 0;
+      line-height:1.35;
+    }
+
+    .ratings{
+      display:grid;
+      grid-template-columns: repeat(5, minmax(0,1fr));
+      gap: 8px;
+    }
+    .rate{
+      border:1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 10px 8px;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:6px;
+      cursor:pointer;
+      user-select:none;
+      transition: border-color .15s ease, box-shadow .15s ease, transform .02s ease;
+      background:#fafafa;
+      min-height: 66px;
+    }
+    .rate:hover{
+      border-color:#cbd5e1;
+      box-shadow: 0 0 0 4px rgba(15,23,42,0.04);
+    }
+    .rate strong{font-size:1.05rem}
+    .rate small{color:var(--muted);font-size:0.82rem; text-align:center; line-height:1.1;}
+    .rate input{display:none;}
+    .rate:has(input:checked){
+      background: #eff6ff;
+      border-color:#93c5fd;
+      box-shadow: 0 0 0 4px rgba(37,99,235,0.12);
+    }
+
+    .footerNote{
+      margin-top:12px;
+      color:var(--muted);
+      font-size:0.9rem;
+      line-height:1.45;
+    }
+
+    .successBox{
+      margin-top: 16px;
+      padding: 14px 14px;
+      border-radius: 14px;
       background: #ecfdf5;
       border: 1px solid #bbf7d0;
-      color: #166534;
-      display:none;
-      white-space: pre-wrap;
     }
-    .divider { height:1px; background:#e5e7eb; margin: 1.1rem 0; }
+    .successBox h2{
+      margin:0 0 6px 0;
+      font-size:1.2rem;
+    }
+    .successBox p{margin:0;color:#14532d;line-height:1.45;}
 
-    .smallnote { margin-top:0.6rem; color:#64748b; font-size:0.9rem; }
-
-    /* Steps */
-    #step2 { display:none; }
-    #step3 { display:none; }
-
+    @media (max-width: 720px){
+      .card{padding: 18px 16px}
+      .ratings{grid-template-columns: repeat(2, minmax(0,1fr));}
+    }
   </style>
 </head>
 <body>
-  <div class="shell">
+  <div class="wrap">
+    <div class="topbar">
+      <div class="brand">
+        <span class="dot"></span>
+        <span>Anonymous 360° feedback</span>
+      </div>
+      <div class="brand" id="envBadge" style="display:none;"></div>
+    </div>
+
     <div class="card">
-      <div class="topline">
+      <h1>Team Leader Feedback</h1>
+      <p class="subtitle">
+        Please complete this short 360° review. Your responses are combined into an anonymous summary report.
+      </p>
+
+      <div class="anonymity">
+        <div class="lock">🔒</div>
         <div>
-          <div class="badge">Anonymous 360° feedback</div>
-          <h1>Team Leader Feedback</h1>
-          <div class="subtitle">
-            Your feedback is anonymous. Please focus on observable behaviours and your experience over the review period.
+          <p><strong>Your feedback is anonymous.</strong> Your identity will not be collected or shared.</p>
+          <small>Open-ended comments may be lightly edited to protect anonymity.</small>
+        </div>
+      </div>
+
+      <div class="progress">
+        <div id="progressText">Step 1 of 2 – Enter your feedback code</div>
+        <div class="bar" aria-hidden="true"><div id="barFill"></div></div>
+        <div class="pct" id="pctText">0%</div>
+      </div>
+
+      <div class="section">
+        <h2>Purpose</h2>
+        <p>
+          This 360° review gathers anonymous, constructive feedback about the team leader. Your identity will not be collected or shared.
+        </p>
+
+        <h2 style="margin-top:14px;">Instructions</h2>
+        <ul class="bullets">
+          <li>Answer honestly and focus on observable behaviors.</li>
+          <li>Your responses will be combined into a summary report.</li>
+          <li>Open-ended comments may be lightly edited to protect anonymity.</li>
+        </ul>
+
+        <div class="scale">
+          <strong>Rating Scale</strong>
+          <div class="scaleRow">
+            <span class="pill"><span class="sq"></span>Never</span>
+            <span class="pill"><span class="sq"></span>Rarely</span>
+            <span class="pill"><span class="sq"></span>Sometimes</span>
+            <span class="pill"><span class="sq"></span>Often</span>
+            <span class="pill"><span class="sq"></span>Always</span>
           </div>
         </div>
       </div>
 
-      <div class="progress-wrap">
-        <div class="progress-meta">
-          <div id="stepLabel">Step 1 of 2 · Enter your feedback code</div>
-          <div id="pctLabel">0%</div>
-        </div>
-        <div class="progress"><div id="bar"></div></div>
-      </div>
+      <!-- STEP 1 -->
+      <div class="step active" id="step1">
+        <div class="section">
+          <h2>Step 1 – Enter your code</h2>
+          <p>
+            Use the one-time feedback code provided to you. This links your feedback to the correct team leader without revealing who you are.
+          </p>
 
-      <div id="step1" class="box">
-        <h2 class="section-title" style="margin-top:0;">Step 1 · Enter your code</h2>
-        <div class="muted">
-          Use the one-time feedback code provided to you. This links your feedback to the correct team leader without revealing who you are.
-        </div>
+          <div class="field">
+            <label for="codeInput">Feedback code</label>
+            <input id="codeInput" type="text" placeholder="e.g. A7K9-Q2M" autocomplete="off" />
+            <div class="footerNote">Tip: you can paste the code. It isn’t case sensitive.</div>
+          </div>
 
-        <label for="codeInput">Feedback code</label>
-        <input type="text" id="codeInput" placeholder="e.g. ABCD-EFGH" autocomplete="off" />
+          <div class="btnRow">
+            <button class="primary" id="startBtn">Start feedback</button>
+          </div>
 
-        <div class="actions">
-          <button id="startBtn">Start feedback</button>
-        </div>
-
-        <div id="step1Err" class="error"></div>
-        <div id="step1Ok" class="ok"></div>
-      </div>
-
-      <div id="step2" class="box">
-        <h2 class="section-title" style="margin-top:0;">Step 2 · Questionnaire</h2>
-        <div class="muted">
-          Please answer all questions. Scores use 1 (strongly disagree) to 5 (strongly agree).
-        </div>
-
-        <div class="divider"></div>
-
-        <!-- Leadership -->
-        <h3 class="section-title">Leadership &amp; Management</h3>
-
-        <div class="q">
-          <label>1) Demonstrates strong leadership and clear direction</label>
-          <div class="qhelp">1 = strongly disagree · 5 = strongly agree</div>
-          <div class="scale" data-qid="q2"></div>
-        </div>
-
-        <div class="q">
-          <label>2) Makes fair and consistent decisions</label>
-          <div class="qhelp">1 = strongly disagree · 5 = strongly agree</div>
-          <div class="scale" data-qid="q3"></div>
-        </div>
-
-        <div class="q">
-          <label>3) Takes ownership and accountability</label>
-          <div class="qhelp">1 = strongly disagree · 5 = strongly agree</div>
-          <div class="scale" data-qid="q4"></div>
-        </div>
-
-        <div class="divider"></div>
-
-        <!-- Communication -->
-        <h3 class="section-title">Communication</h3>
-
-        <div class="q">
-          <label>4) Communicates clearly and in a timely way</label>
-          <div class="qhelp">1 = strongly disagree · 5 = strongly agree</div>
-          <div class="scale" data-qid="q5"></div>
-        </div>
-
-        <div class="q">
-          <label>5) Listens and considers different viewpoints</label>
-          <div class="qhelp">1 = strongly disagree · 5 = strongly agree</div>
-          <div class="scale" data-qid="q6"></div>
-        </div>
-
-        <div class="q">
-          <label>6) Gives helpful feedback and recognition</label>
-          <div class="qhelp">1 = strongly disagree · 5 = strongly agree</div>
-          <div class="scale" data-qid="q7"></div>
-        </div>
-
-        <div class="divider"></div>
-
-        <!-- Team Support -->
-        <h3 class="section-title">Team Support &amp; Development</h3>
-
-        <div class="q">
-          <label>7) Supports the team to perform at their best</label>
-          <div class="qhelp">1 = strongly disagree · 5 = strongly agree</div>
-          <div class="scale" data-qid="q8"></div>
-        </div>
-
-        <div class="q">
-          <label>8) Helps develop skills and confidence</label>
-          <div class="qhelp">1 = strongly disagree · 5 = strongly agree</div>
-          <div class="scale" data-qid="q9"></div>
-        </div>
-
-        <div class="q">
-          <label>9) Creates an environment where people feel supported</label>
-          <div class="qhelp">1 = strongly disagree · 5 = strongly agree</div>
-          <div class="scale" data-qid="q10"></div>
-        </div>
-
-        <div class="divider"></div>
-
-        <!-- Collaboration -->
-        <h3 class="section-title">Collaboration &amp; Culture</h3>
-
-        <div class="q">
-          <label>10) Encourages collaboration and teamwork</label>
-          <div class="qhelp">1 = strongly disagree · 5 = strongly agree</div>
-          <div class="scale" data-qid="q11"></div>
-        </div>
-
-        <div class="q">
-          <label>11) Treats people with respect and fairness</label>
-          <div class="qhelp">1 = strongly disagree · 5 = strongly agree</div>
-          <div class="scale" data-qid="q12"></div>
-        </div>
-
-        <div class="q">
-          <label>12) Contributes to a positive team culture</label>
-          <div class="qhelp">1 = strongly disagree · 5 = strongly agree</div>
-          <div class="scale" data-qid="q13"></div>
-        </div>
-
-        <div class="divider"></div>
-
-        <!-- Execution -->
-        <h3 class="section-title">Execution &amp; Accountability</h3>
-
-        <div class="q">
-          <label>13) Sets clear expectations and follows through</label>
-          <div class="qhelp">1 = strongly disagree · 5 = strongly agree</div>
-          <div class="scale" data-qid="q14"></div>
-        </div>
-
-        <div class="q">
-          <label>14) Helps remove blockers and keeps work moving</label>
-          <div class="qhelp">1 = strongly disagree · 5 = strongly agree</div>
-          <div class="scale" data-qid="q15"></div>
-        </div>
-
-        <div class="q">
-          <label>15) Focuses on outcomes and quality of delivery</label>
-          <div class="qhelp">1 = strongly disagree · 5 = strongly agree</div>
-          <div class="scale" data-qid="q16"></div>
-        </div>
-
-        <div class="divider"></div>
-
-        <h3 class="section-title">Open comments</h3>
-        <div class="muted">
-          Please avoid names or very specific situations that could identify you or others.
-          Focus on themes and behaviours. These questions are required.
-        </div>
-
-        <label for="strengthsText">What are this team leader’s greatest strengths?</label>
-        <textarea id="strengthsText" placeholder="Write your answer here (required)."></textarea>
-
-        <label for="devText">What could this team leader improve or develop further?</label>
-        <textarea id="devText" placeholder="Write your answer here (required)."></textarea>
-
-        <label for="otherText">Anything else that would help this team leader succeed?</label>
-        <textarea id="otherText" placeholder="Write your answer here (required)."></textarea>
-
-        <div class="actions">
-          <button id="submitBtn">Submit feedback</button>
-          <button id="restartBtn" class="secondary">Start over</button>
-        </div>
-
-        <div id="submitErr" class="error"></div>
-        <div id="submitOk" class="ok"></div>
-
-        <div class="smallnote">
-          If you refresh the page mid-way, you can continue as long as your session token is still valid (2 hours).
+          <div class="err" id="step1Err"></div>
+          <div class="ok" id="step1Ok"></div>
         </div>
       </div>
 
-      <div id="step3" class="box">
-        <h2 class="section-title" style="margin-top:0;">Thank you</h2>
-        <div class="muted">
-          Your feedback has been submitted successfully.
-        </div>
-        <div class="actions">
-          <button id="restartBtn2" class="secondary">Submit another code</button>
+      <!-- STEP 2 -->
+      <div class="step" id="step2">
+        <div class="section">
+          <h2>Step 2 – Complete feedback</h2>
+          <p>
+            Please answer all statements below using the rating scale. All questions are required.
+          </p>
+
+          <form id="feedbackForm">
+            <!-- Leadership & Management -->
+            <div class="qgroup">
+              <h3>Leadership &amp; Management</h3>
+
+              <div class="question" data-qid="q1">
+                <p class="qtext">1. The team leader sets clear expectations and goals.</p>
+                <div class="ratings">
+                  <label class="rate"><input type="radio" name="q1" value="1" required><strong>1</strong><small>Never</small></label>
+                  <label class="rate"><input type="radio" name="q1" value="2"><strong>2</strong><small>Rarely</small></label>
+                  <label class="rate"><input type="radio" name="q1" value="3"><strong>3</strong><small>Sometimes</small></label>
+                  <label class="rate"><input type="radio" name="q1" value="4"><strong>4</strong><small>Often</small></label>
+                  <label class="rate"><input type="radio" name="q1" value="5"><strong>5</strong><small>Always</small></label>
+                </div>
+              </div>
+
+              <div class="question" data-qid="q2">
+                <p class="qtext">2. The team leader makes fair, well-informed decisions.</p>
+                <div class="ratings">
+                  <label class="rate"><input type="radio" name="q2" value="1" required><strong>1</strong><small>Never</small></label>
+                  <label class="rate"><input type="radio" name="q2" value="2"><strong>2</strong><small>Rarely</small></label>
+                  <label class="rate"><input type="radio" name="q2" value="3"><strong>3</strong><small>Sometimes</small></label>
+                  <label class="rate"><input type="radio" name="q2" value="4"><strong>4</strong><small>Often</small></label>
+                  <label class="rate"><input type="radio" name="q2" value="5"><strong>5</strong><small>Always</small></label>
+                </div>
+              </div>
+
+              <div class="question" data-qid="q3">
+                <p class="qtext">3. The team leader remains composed and professional under pressure.</p>
+                <div class="ratings">
+                  <label class="rate"><input type="radio" name="q3" value="1" required><strong>1</strong><small>Never</small></label>
+                  <label class="rate"><input type="radio" name="q3" value="2"><strong>2</strong><small>Rarely</small></label>
+                  <label class="rate"><input type="radio" name="q3" value="3"><strong>3</strong><small>Sometimes</small></label>
+                  <label class="rate"><input type="radio" name="q3" value="4"><strong>4</strong><small>Often</small></label>
+                  <label class="rate"><input type="radio" name="q3" value="5"><strong>5</strong><small>Always</small></label>
+                </div>
+              </div>
+            </div>
+
+            <!-- Communication -->
+            <div class="qgroup">
+              <h3>Communication</h3>
+
+              <div class="question" data-qid="q4">
+                <p class="qtext">4. The team leader communicates openly and transparently.</p>
+                <div class="ratings">
+                  <label class="rate"><input type="radio" name="q4" value="1" required><strong>1</strong><small>Never</small></label>
+                  <label class="rate"><input type="radio" name="q4" value="2"><strong>2</strong><small>Rarely</small></label>
+                  <label class="rate"><input type="radio" name="q4" value="3"><strong>3</strong><small>Sometimes</small></label>
+                  <label class="rate"><input type="radio" name="q4" value="4"><strong>4</strong><small>Often</small></label>
+                  <label class="rate"><input type="radio" name="q4" value="5"><strong>5</strong><small>Always</small></label>
+                </div>
+              </div>
+
+              <div class="question" data-qid="q5">
+                <p class="qtext">5. The team leader listens actively and considers feedback.</p>
+                <div class="ratings">
+                  <label class="rate"><input type="radio" name="q5" value="1" required><strong>1</strong><small>Never</small></label>
+                  <label class="rate"><input type="radio" name="q5" value="2"><strong>2</strong><small>Rarely</small></label>
+                  <label class="rate"><input type="radio" name="q5" value="3"><strong>3</strong><small>Sometimes</small></label>
+                  <label class="rate"><input type="radio" name="q5" value="4"><strong>4</strong><small>Often</small></label>
+                  <label class="rate"><input type="radio" name="q5" value="5"><strong>5</strong><small>Always</small></label>
+                </div>
+              </div>
+
+              <div class="question" data-qid="q6">
+                <p class="qtext">6. The team leader provides timely and useful updates.</p>
+                <div class="ratings">
+                  <label class="rate"><input type="radio" name="q6" value="1" required><strong>1</strong><small>Never</small></label>
+                  <label class="rate"><input type="radio" name="q6" value="2"><strong>2</strong><small>Rarely</small></label>
+                  <label class="rate"><input type="radio" name="q6" value="3"><strong>3</strong><small>Sometimes</small></label>
+                  <label class="rate"><input type="radio" name="q6" value="4"><strong>4</strong><small>Often</small></label>
+                  <label class="rate"><input type="radio" name="q6" value="5"><strong>5</strong><small>Always</small></label>
+                </div>
+              </div>
+            </div>
+
+            <!-- Team Support & Development -->
+            <div class="qgroup">
+              <h3>Team Support &amp; Development</h3>
+
+              <div class="question" data-qid="q7">
+                <p class="qtext">7. The team leader supports professional growth and development.</p>
+                <div class="ratings">
+                  <label class="rate"><input type="radio" name="q7" value="1" required><strong>1</strong><small>Never</small></label>
+                  <label class="rate"><input type="radio" name="q7" value="2"><strong>2</strong><small>Rarely</small></label>
+                  <label class="rate"><input type="radio" name="q7" value="3"><strong>3</strong><small>Sometimes</small></label>
+                  <label class="rate"><input type="radio" name="q7" value="4"><strong>4</strong><small>Often</small></label>
+                  <label class="rate"><input type="radio" name="q7" value="5"><strong>5</strong><small>Always</small></label>
+                </div>
+              </div>
+
+              <div class="question" data-qid="q8">
+                <p class="qtext">8. The team leader provides constructive, actionable feedback.</p>
+                <div class="ratings">
+                  <label class="rate"><input type="radio" name="q8" value="1" required><strong>1</strong><small>Never</small></label>
+                  <label class="rate"><input type="radio" name="q8" value="2"><strong>2</strong><small>Rarely</small></label>
+                  <label class="rate"><input type="radio" name="q8" value="3"><strong>3</strong><small>Sometimes</small></label>
+                  <label class="rate"><input type="radio" name="q8" value="4"><strong>4</strong><small>Often</small></label>
+                  <label class="rate"><input type="radio" name="q8" value="5"><strong>5</strong><small>Always</small></label>
+                </div>
+              </div>
+
+              <div class="question" data-qid="q9">
+                <p class="qtext">9. The team leader acknowledges and recognizes good performance.</p>
+                <div class="ratings">
+                  <label class="rate"><input type="radio" name="q9" value="1" required><strong>1</strong><small>Never</small></label>
+                  <label class="rate"><input type="radio" name="q9" value="2"><strong>2</strong><small>Rarely</small></label>
+                  <label class="rate"><input type="radio" name="q9" value="3"><strong>3</strong><small>Sometimes</small></label>
+                  <label class="rate"><input type="radio" name="q9" value="4"><strong>4</strong><small>Often</small></label>
+                  <label class="rate"><input type="radio" name="q9" value="5"><strong>5</strong><small>Always</small></label>
+                </div>
+              </div>
+            </div>
+
+            <!-- Collaboration & Culture -->
+            <div class="qgroup">
+              <h3>Collaboration &amp; Culture</h3>
+
+              <div class="question" data-qid="q10">
+                <p class="qtext">10. The team leader promotes a positive and respectful team culture.</p>
+                <div class="ratings">
+                  <label class="rate"><input type="radio" name="q10" value="1" required><strong>1</strong><small>Never</small></label>
+                  <label class="rate"><input type="radio" name="q10" value="2"><strong>2</strong><small>Rarely</small></label>
+                  <label class="rate"><input type="radio" name="q10" value="3"><strong>3</strong><small>Sometimes</small></label>
+                  <label class="rate"><input type="radio" name="q10" value="4"><strong>4</strong><small>Often</small></label>
+                  <label class="rate"><input type="radio" name="q10" value="5"><strong>5</strong><small>Always</small></label>
+                </div>
+              </div>
+
+              <div class="question" data-qid="q11">
+                <p class="qtext">11. The team leader encourages collaboration and teamwork.</p>
+                <div class="ratings">
+                  <label class="rate"><input type="radio" name="q11" value="1" required><strong>1</strong><small>Never</small></label>
+                  <label class="rate"><input type="radio" name="q11" value="2"><strong>2</strong><small>Rarely</small></label>
+                  <label class="rate"><input type="radio" name="q11" value="3"><strong>3</strong><small>Sometimes</small></label>
+                  <label class="rate"><input type="radio" name="q11" value="4"><strong>4</strong><small>Often</small></label>
+                  <label class="rate"><input type="radio" name="q11" value="5"><strong>5</strong><small>Always</small></label>
+                </div>
+              </div>
+
+              <div class="question" data-qid="q12">
+                <p class="qtext">12. The team leader manages conflicts effectively and professionally.</p>
+                <div class="ratings">
+                  <label class="rate"><input type="radio" name="q12" value="1" required><strong>1</strong><small>Never</small></label>
+                  <label class="rate"><input type="radio" name="q12" value="2"><strong>2</strong><small>Rarely</small></label>
+                  <label class="rate"><input type="radio" name="q12" value="3"><strong>3</strong><small>Sometimes</small></label>
+                  <label class="rate"><input type="radio" name="q12" value="4"><strong>4</strong><small>Often</small></label>
+                  <label class="rate"><input type="radio" name="q12" value="5"><strong>5</strong><small>Always</small></label>
+                </div>
+              </div>
+            </div>
+
+            <!-- Execution & Accountability -->
+            <div class="qgroup">
+              <h3>Execution &amp; Accountability</h3>
+
+              <div class="question" data-qid="q13">
+                <p class="qtext">13. The team leader ensures tasks and commitments are completed on time.</p>
+                <div class="ratings">
+                  <label class="rate"><input type="radio" name="q13" value="1" required><strong>1</strong><small>Never</small></label>
+                  <label class="rate"><input type="radio" name="q13" value="2"><strong>2</strong><small>Rarely</small></label>
+                  <label class="rate"><input type="radio" name="q13" value="3"><strong>3</strong><small>Sometimes</small></label>
+                  <label class="rate"><input type="radio" name="q13" value="4"><strong>4</strong><small>Often</small></label>
+                  <label class="rate"><input type="radio" name="q13" value="5"><strong>5</strong><small>Always</small></label>
+                </div>
+              </div>
+
+              <div class="question" data-qid="q14">
+                <p class="qtext">14. The team leader holds themselves and others accountable.</p>
+                <div class="ratings">
+                  <label class="rate"><input type="radio" name="q14" value="1" required><strong>1</strong><small>Never</small></label>
+                  <label class="rate"><input type="radio" name="q14" value="2"><strong>2</strong><small>Rarely</small></label>
+                  <label class="rate"><input type="radio" name="q14" value="3"><strong>3</strong><small>Sometimes</small></label>
+                  <label class="rate"><input type="radio" name="q14" value="4"><strong>4</strong><small>Often</small></label>
+                  <label class="rate"><input type="radio" name="q14" value="5"><strong>5</strong><small>Always</small></label>
+                </div>
+              </div>
+
+              <div class="question" data-qid="q15">
+                <p class="qtext">15. The team leader effectively prioritizes and delegates tasks.</p>
+                <div class="ratings">
+                  <label class="rate"><input type="radio" name="q15" value="1" required><strong>1</strong><small>Never</small></label>
+                  <label class="rate"><input type="radio" name="q15" value="2"><strong>2</strong><small>Rarely</small></label>
+                  <label class="rate"><input type="radio" name="q15" value="3"><strong>3</strong><small>Sometimes</small></label>
+                  <label class="rate"><input type="radio" name="q15" value="4"><strong>4</strong><small>Often</small></label>
+                  <label class="rate"><input type="radio" name="q15" value="5"><strong>5</strong><small>Always</small></label>
+                </div>
+              </div>
+            </div>
+
+            <!-- Open-ended -->
+            <div class="qgroup">
+              <h3>Open-Ended Questions</h3>
+              <p style="margin:0 0 10px 0;color:var(--muted);">
+                Please avoid names or very specific situations that could identify you or others. Focus on themes and behaviours.
+              </p>
+
+              <div class="field">
+                <label for="strengthsText">What are this team leader’s greatest strengths?</label>
+                <textarea id="strengthsText" required placeholder="Write your feedback here..."></textarea>
+              </div>
+
+              <div class="field">
+                <label for="devText">What could this team leader improve or develop further?</label>
+                <textarea id="devText" required placeholder="Write your feedback here..."></textarea>
+              </div>
+
+              <div class="field">
+                <label for="otherText">Is there anything else you would like to share that would help this leader succeed?</label>
+                <textarea id="otherText" required placeholder="Write your feedback here..."></textarea>
+              </div>
+            </div>
+
+            <div class="btnRow">
+              <button type="button" class="ghost" id="startOverBtn">Start over</button>
+              <button type="submit" class="primary" id="submitBtn">Submit feedback</button>
+            </div>
+
+            <div class="err" id="submitErr"></div>
+            <div class="ok" id="submitOk"></div>
+
+            <div class="footerNote">
+              If you refresh the page mid-way, the form will try to restore your session automatically.
+            </div>
+          </form>
+
+          <div id="successScreen" style="display:none;">
+            <div class="successBox">
+              <h2>✅ Thank you</h2>
+              <p>Your feedback has been submitted successfully. You may now close this window.</p>
+            </div>
+            <div class="btnRow" style="justify-content:flex-end;">
+              <button class="ghost" id="doneStartOver">Start over</button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -344,132 +681,120 @@
   </div>
 
   <script>
-    const API = ""; // same origin
+    const API = ""; // same origin (Render). Leave blank.
 
-    // --- UI helpers ---
-    const stepLabel = document.getElementById("stepLabel");
-    const pctLabel = document.getElementById("pctLabel");
-    const bar = document.getElementById("bar");
+    const LS_KEY = "tl360_session_v1";
 
     const step1 = document.getElementById("step1");
     const step2 = document.getElementById("step2");
-    const step3 = document.getElementById("step3");
+    const progressText = document.getElementById("progressText");
+    const barFill = document.getElementById("barFill");
+    const pctText = document.getElementById("pctText");
 
+    const codeInput = document.getElementById("codeInput");
+    const startBtn = document.getElementById("startBtn");
     const step1Err = document.getElementById("step1Err");
     const step1Ok = document.getElementById("step1Ok");
+
+    const form = document.getElementById("feedbackForm");
+    const submitBtn = document.getElementById("submitBtn");
     const submitErr = document.getElementById("submitErr");
     const submitOk = document.getElementById("submitOk");
 
-    function show(el, on) { el.style.display = on ? "block" : "none"; }
-    function setErr(el, msg) { el.textContent = msg || ""; el.style.display = msg ? "block" : "none"; }
-    function setOk(el, msg) { el.textContent = msg || ""; el.style.display = msg ? "block" : "none"; }
+    const startOverBtn = document.getElementById("startOverBtn");
+    const successScreen = document.getElementById("successScreen");
+    const doneStartOver = document.getElementById("doneStartOver");
 
-    function setProgress(step) {
-      if (step === 1) {
-        stepLabel.textContent = "Step 1 of 2 · Enter your feedback code";
-        pctLabel.textContent = "0%";
-        bar.style.width = "0%";
-      } else if (step === 2) {
-        stepLabel.textContent = "Step 2 of 2 · Questionnaire";
-        pctLabel.textContent = "60%";
-        bar.style.width = "60%";
-      } else {
-        stepLabel.textContent = "Complete";
-        pctLabel.textContent = "100%";
-        bar.style.width = "100%";
+    function setErr(el, msg){
+      el.textContent = msg || "";
+      el.style.display = msg ? "block" : "none";
+    }
+    function setOk(el, msg){
+      el.textContent = msg || "";
+      el.style.display = msg ? "block" : "none";
+    }
+
+    function setProgress(step){
+      if (step === 1){
+        progressText.textContent = "Step 1 of 2 – Enter your feedback code";
+        barFill.style.width = "0%";
+        pctText.textContent = "0%";
+      } else if (step === 2){
+        progressText.textContent = "Step 2 of 2 – Complete feedback";
+        barFill.style.width = "50%";
+        pctText.textContent = "50%";
+      } else if (step === 3){
+        progressText.textContent = "Complete";
+        barFill.style.width = "100%";
+        pctText.textContent = "100%";
       }
     }
 
-    // --- session storage (only sessionToken) ---
-    const STORAGE_KEY = "tl360_session_v1";
-
-    function saveSession(session) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
+    function showStep(n){
+      step1.classList.toggle("active", n === 1);
+      step2.classList.toggle("active", n === 2);
+      setProgress(n);
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
-    function loadSession() {
-      try {
-        const raw = localStorage.getItem(STORAGE_KEY);
+
+    function saveSession(session){
+      localStorage.setItem(LS_KEY, JSON.stringify(session));
+    }
+    function loadSession(){
+      try{
+        const raw = localStorage.getItem(LS_KEY);
         if (!raw) return null;
         return JSON.parse(raw);
       } catch {
         return null;
       }
     }
-    function clearSession() {
-      localStorage.removeItem(STORAGE_KEY);
+    function clearSession(){
+      localStorage.removeItem(LS_KEY);
     }
 
-    function gotoStep1() {
-      show(step1, true);
-      show(step2, false);
-      show(step3, false);
-      setProgress(1);
-      setErr(step1Err, "");
-      setOk(step1Ok, "");
-      setErr(submitErr, "");
-      setOk(submitOk, "");
-    }
-
-    function gotoStep2() {
-      show(step1, false);
-      show(step2, true);
-      show(step3, false);
-      setProgress(2);
-      setErr(step1Err, "");
-      setOk(step1Ok, "");
-      setErr(submitErr, "");
-      setOk(submitOk, "");
-    }
-
-    function gotoStep3() {
-      show(step1, false);
-      show(step2, false);
-      show(step3, true);
-      setProgress(3);
-      setErr(submitErr, "");
-      setOk(submitOk, "");
-    }
-
-    // --- Build rating scales (required) ---
-    function buildScale(container) {
-      const qid = container.getAttribute("data-qid");
-      // 1..5
-      for (let i = 1; i <= 5; i++) {
-        const id = `${qid}_${i}`;
-        const lbl = document.createElement("label");
-
-        const input = document.createElement("input");
-        input.type = "radio";
-        input.name = qid;
-        input.value = String(i);
-        input.id = id;
-
-        const span = document.createElement("span");
-        span.textContent = i;
-
-        // Important: input must be before span for CSS selector
-        lbl.appendChild(input);
-        lbl.appendChild(span);
-        container.appendChild(lbl);
+    function collectScores(){
+      const scores = {};
+      for (let i=1; i<=15; i++){
+        const name = "q" + i;
+        const checked = document.querySelector(`input[name="${name}"]:checked`);
+        if (!checked) return null;
+        scores[name] = Number(checked.value);
       }
+      return scores;
     }
 
-    document.querySelectorAll(".scale").forEach(buildScale);
+    function allWrittenDone(){
+      const strengthsText = document.getElementById("strengthsText").value.trim();
+      const devText = document.getElementById("devText").value.trim();
+      const otherText = document.getElementById("otherText").value.trim();
+      return strengthsText && devText && otherText;
+    }
 
-    // --- Start session ---
-    const codeInput = document.getElementById("codeInput");
-    const startBtn = document.getElementById("startBtn");
+    function updateSubmitEnabled(){
+      const scores = collectScores();
+      submitBtn.disabled = !(scores && allWrittenDone());
+    }
 
-    startBtn.addEventListener("click", async () => {
-      const code = (codeInput.value || "").trim().toUpperCase();
+    // Listen for changes to enable submit
+    document.addEventListener("change", (e) => {
+      if (step2.classList.contains("active")) updateSubmitEnabled();
+    });
+    document.addEventListener("input", (e) => {
+      if (step2.classList.contains("active")) updateSubmitEnabled();
+    });
+
+    async function startSession(){
       setErr(step1Err, "");
       setOk(step1Ok, "");
+
+      const code = (codeInput.value || "").trim().toUpperCase();
       if (!code) return setErr(step1Err, "Please enter a code.");
 
       startBtn.disabled = true;
       startBtn.textContent = "Checking...";
 
-      try {
+      try{
         const res = await fetch(API + "/api/start-session", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -478,71 +803,65 @@
 
         const data = await res.json().catch(() => ({}));
 
-        if (!res.ok) {
+        if (!res.ok){
           startBtn.disabled = false;
           startBtn.textContent = "Start feedback";
           return setErr(step1Err, data.error || "Unable to start. Please check your code.");
         }
 
-        if (!data.sessionToken) {
+        if (!data.sessionToken){
           startBtn.disabled = false;
           startBtn.textContent = "Start feedback";
           return setErr(step1Err, "Server did not return a session token. Please try again.");
         }
 
-        saveSession({ sessionToken: data.sessionToken, startedAt: Date.now() });
-        setOk(step1Ok, "Code accepted. Loading questionnaire...");
-        gotoStep2();
+        // Store only what we need (token). Keep code out of storage.
+        const session = {
+          sessionToken: data.sessionToken,
+          startedAt: Date.now()
+        };
+        saveSession(session);
 
-      } catch (e) {
+        setOk(step1Ok, "Code accepted. Loading questionnaire...");
+        showStep(2);
+        updateSubmitEnabled();
+
+      } catch (e){
         console.error(e);
         setErr(step1Err, "Network error. Please try again.");
       } finally {
         startBtn.disabled = false;
         startBtn.textContent = "Start feedback";
       }
-    });
-
-    // --- Submit feedback ---
-    const submitBtn = document.getElementById("submitBtn");
-    const restartBtn = document.getElementById("restartBtn");
-    const restartBtn2 = document.getElementById("restartBtn2");
-
-    function getScores() {
-      const qids = ["q2","q3","q4","q5","q6","q7","q8","q9","q10","q11","q12","q13","q14","q15","q16"];
-      const scores = {};
-      for (const qid of qids) {
-        const checked = document.querySelector(`input[name="${qid}"]:checked`);
-        if (!checked) return { error: `Please answer all score questions (missing ${qid}).` };
-        scores[qid] = Number(checked.value);
-      }
-      return { scores };
     }
 
-    submitBtn.addEventListener("click", async () => {
+    async function submitFeedback(e){
+      e.preventDefault();
       setErr(submitErr, "");
       setOk(submitOk, "");
 
       const session = loadSession();
-      if (!session || !session.sessionToken) {
+      if (!session || !session.sessionToken){
         return setErr(submitErr, "Your session is missing. Please click “Start over” and re-enter your code.");
       }
 
-      const { scores, error } = getScores();
-      if (error) return setErr(submitErr, error);
+      const scores = collectScores();
+      if (!scores){
+        return setErr(submitErr, "Please answer all rating questions before submitting.");
+      }
 
       const strengthsText = document.getElementById("strengthsText").value.trim();
       const devText = document.getElementById("devText").value.trim();
       const otherText = document.getElementById("otherText").value.trim();
 
-      if (!strengthsText || !devText || !otherText) {
+      if (!strengthsText || !devText || !otherText){
         return setErr(submitErr, "Please complete all written questions before submitting.");
       }
 
       submitBtn.disabled = true;
       submitBtn.textContent = "Submitting...";
 
-      try {
+      try{
         const res = await fetch(API + "/api/submit-feedback", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -557,47 +876,83 @@
 
         const data = await res.json().catch(() => ({}));
 
-        if (!res.ok) {
+        if (!res.ok){
           submitBtn.disabled = false;
           submitBtn.textContent = "Submit feedback";
           return setErr(submitErr, data.error || "Server error saving feedback.");
         }
 
-        clearSession();
+        // Success
         setOk(submitOk, "Submitted successfully.");
-        gotoStep3();
+        clearSession();
+        setProgress(3);
 
-      } catch (e) {
+        // Hide form, show success screen
+        form.style.display = "none";
+        successScreen.style.display = "block";
+        window.scrollTo({ top: 0, behavior: "smooth" });
+
+      } catch (e){
         console.error(e);
         setErr(submitErr, "Network error. Please try again.");
       } finally {
         submitBtn.disabled = false;
         submitBtn.textContent = "Submit feedback";
       }
+    }
+
+    function startOver(){
+      if (confirm("Start over? You’ll need to re-enter your feedback code.")){
+        clearSession();
+        // reset form
+        if (form){
+          form.reset();
+          form.style.display = "block";
+        }
+        if (successScreen) successScreen.style.display = "none";
+        setErr(step1Err, "");
+        setOk(step1Ok, "");
+        setErr(submitErr, "");
+        setOk(submitOk, "");
+        codeInput.value = "";
+        showStep(1);
+        setTimeout(() => codeInput.focus(), 50);
+      }
+    }
+
+    // Wire events
+    startBtn.addEventListener("click", startSession);
+    codeInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        startSession();
+      }
     });
+    form.addEventListener("submit", submitFeedback);
+    startOverBtn.addEventListener("click", startOver);
+    doneStartOver.addEventListener("click", startOver);
 
-    // Start over
-    function doRestart() {
-      clearSession();
-      // reset form selections
-      document.querySelectorAll('input[type="radio"]').forEach(i => i.checked = false);
-      document.getElementById("strengthsText").value = "";
-      document.getElementById("devText").value = "";
-      document.getElementById("otherText").value = "";
-      codeInput.value = "";
-      gotoStep1();
-    }
+    // On load: try restore session
+    (function init(){
+      setProgress(1);
+      codeInput.focus();
 
-    restartBtn.addEventListener("click", doRestart);
-    restartBtn2.addEventListener("click", doRestart);
+      // For a nicer feel: uppercase as user types
+      codeInput.addEventListener("input", () => {
+        const pos = codeInput.selectionStart;
+        codeInput.value = (codeInput.value || "").toUpperCase();
+        codeInput.setSelectionRange(pos, pos);
+      });
 
-    // Resume on reload if a token exists
-    const existing = loadSession();
-    if (existing && existing.sessionToken) {
-      gotoStep2();
-    } else {
-      gotoStep1();
-    }
+      const existing = loadSession();
+      if (existing && existing.sessionToken){
+        // Resume at step 2
+        showStep(2);
+        updateSubmitEnabled();
+      } else {
+        showStep(1);
+      }
+    })();
   </script>
 </body>
 </html>
